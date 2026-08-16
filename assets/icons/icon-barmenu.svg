@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#173F4F"/>
+  <path d="M170 150 H342 L322 300 Q315 340 256 340 Q197 340 190 300 Z" fill="#2D7F8C"/>
+  <rect x="246" y="335" width="20" height="70" fill="#2D7F8C"/>
+  <rect x="196" y="400" width="120" height="18" rx="9" fill="#2D7F8C"/>
+  <path d="M150 190 Q170 205 190 190" stroke="#f6e8a6" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <text x="256" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="700" fill="white">BAR MENU</text>
+</svg>

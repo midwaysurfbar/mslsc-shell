@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#153b50"/>
+  <path d="M86 370c72-88 145-89 219-1 43 51 82 47 125 5v78c-62 40-120 13-168-43-47-55-92-54-176 21z" fill="#7dd3fc"/>
+  <rect x="118" y="92" width="276" height="258" rx="28" fill="white"/>
+  <rect x="118" y="92" width="276" height="70" rx="28" fill="#0f766e"/>
+  <path d="M184 68v54M328 68v54" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <rect x="162" y="198" width="70" height="62" rx="12" fill="#f59e0b"/>
+  <rect x="280" y="198" width="70" height="62" rx="12" fill="#f59e0b"/>
+  <rect x="162" y="278" width="70" height="42" rx="12" fill="#cbd5e1"/>
+  <rect x="280" y="278" width="70" height="42" rx="12" fill="#cbd5e1"/>
+  <text x="256" y="472" text-anchor="middle" font-family="Arial" font-size="42" font-weight="700" fill="white">BOOKINGS</text>
+</svg>

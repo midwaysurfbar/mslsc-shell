@@ -1,0 +1,14 @@
+{
+  "name": "mslsc-shell",
+  "productName": "MSLSC",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Phase 1 local prototype - a desktop shell that loads the six live MSLSC systems inside one window instead of six browser tabs.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

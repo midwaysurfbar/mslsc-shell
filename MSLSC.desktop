@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=MSLSC
+Comment=MSLSC Systems Shell - Phase 1 prototype
+Exec=/home/sam/.local/bin/mslsc-launch.sh
+Icon=/home/sam/Documents/MSLSC Release ZIPs/MSLSC Shell/assets/icon-hub-256.png
+Terminal=true
+Categories=Utility;

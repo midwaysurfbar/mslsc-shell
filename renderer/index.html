@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>MSLSC</title>
+<style>
+  :root {
+    --bg: #f4f7f6;
+    --surface: #ffffff;
+    --surface-2: #eef4f4;
+    --ink: #20313a;
+    --ink-soft: #5d7078;
+    --ink-faint: #86999e;
+    --line: #d8e2e3;
+    --navy: #173F4F;
+    --navy-soft: #2a5468;
+    --teal: #2D7F8C;
+    --gold: #f6e8a6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: var(--navy-soft);
+    display: flex;
+  }
+
+  .rail {
+    width: 64px;
+    background: var(--navy-soft);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 0;
+    flex: 0 0 64px;
+    height: 100vh;
+    -webkit-app-region: drag;
+  }
+  .rail button {
+    -webkit-app-region: no-drag;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.62;
+    background: transparent;
+    transition: opacity 0.15s, outline-color 0.15s;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+  .rail button img { display: block; width: 100%; height: 100%; }
+  .rail button:hover { opacity: 0.85; }
+  .rail button.active { opacity: 1; outline-color: var(--gold); }
+  .rail .sep { width: 30px; height: 1px; background: rgba(255,255,255,0.18); margin: 2px 0; }
+
+  .home {
+    flex: 1 1 auto;
+    background: var(--bg);
+    padding: 28px 32px;
+    overflow: auto;
+    height: 100vh;
+  }
+  .home.hidden { display: none; }
+
+  .home-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .home-hero h1 { margin: 0; font-size: 1.5rem; color: var(--navy); }
+  .home-hero p { margin: 4px 0 0; color: var(--ink-soft); font-size: 0.92rem; }
+  .widgets { display: flex; gap: 10px; flex-wrap: wrap; }
+  .widget-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.86rem;
+    box-shadow: 0 5px 18px rgba(23,63,79,0.08);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 170px;
+  }
+  .widget-card .icon { font-size: 1.35rem; line-height: 1; }
+  .widget-card .primary { font-weight: 700; color: var(--ink); }
+  .widget-card .secondary { font-size: 0.74rem; color: var(--ink-faint); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 5px 18px rgba(23,63,79,0.08);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .card:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(23,63,79,0.14); }
+  .card img { width: 40px; height: 40px; border-radius: 10px; flex: 0 0 auto; }
+  .card b { display: block; font-size: 0.92rem; color: var(--ink); }
+  .card span { font-size: 0.78rem; color: var(--ink-faint); }
+
+  .hint {
+    margin-top: 26px;
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    max-width: 60ch;
+  }
+  .hint b { color: var(--ink); }
+
+  .loading {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .loading.visible { display: flex; }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 4px solid var(--line);
+    border-top-color: var(--teal);
+    animation: spin 0.8s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation: none; border-top-color: var(--line); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading .label { font-size: 0.98rem; color: var(--ink-soft); }
+  .loading .label b { color: var(--ink); }
+  .loading .error-icon { font-size: 2.2rem; }
+  .loading .retry {
+    margin-top: 4px;
+    background: var(--teal);
+    color: white;
+    border: 0;
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .loading .retry:hover { opacity: 0.92; }
+</style>
+</head>
+<body>
+  <nav class="rail" id="rail">
+    <button class="active" data-id="home" title="Home"><img src="../assets/icons/icon-hub.svg" alt="" /></button>
+    <div class="sep"></div>
+    <button data-id="attendance" title="Attendance"><img src="../assets/icons/icon-attendance.svg" alt="" /></button>
+    <button data-id="barmenu" title="Bar Menu"><img src="../assets/icons/icon-barmenu.svg" alt="" /></button>
+    <button data-id="barinventory" title="Bar Inventory"><img src="../assets/icons/icon-barinventory.svg" alt="" /></button>
+    <button data-id="barbooking" title="Bar Booking"><img src="../assets/icons/icon-bar-booking.svg" alt="" /></button>
+    <button data-id="auction" title="Auction"><img src="../assets/icons/icon-auction.svg" alt="" /></button>
+    <button data-id="raffle" title="Raffle"><img src="../assets/icons/icon-raffle.svg" alt="" /></button>
+  </nav>
+
+  <div class="loading" id="loading">
+    <div class="spinner" id="loading-spinner"></div>
+    <div class="error-icon" id="loading-error-icon" style="display:none;">⚠️</div>
+    <div class="label" id="loading-label"></div>
+    <button class="retry" id="loading-retry" style="display:none;">Try again</button>
+  </div>
+
+  <main class="home" id="home">
+    <div class="home-hero">
+      <div>
+        <h1 id="greeting">Good day</h1>
+        <p>Pick a system from the left — everything opens right here.</p>
+      </div>
+      <div class="widgets">
+        <div class="widget-card">
+          <span class="icon">🕐</span>
+          <div><div class="primary" id="clock">--:--</div><div class="secondary" id="date">--</div></div>
+        </div>
+        <div class="widget-card">
+          <span class="icon" id="weather-icon">🌡️</span>
+          <div><div class="primary" id="weather-primary">Loading…</div><div class="secondary" id="weather-secondary">Midway Beach</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card" data-id="attendance"><img src="../assets/icons/icon-attendance.svg" alt="" /><div><b>Attendance</b><span>Kiosk sign-in + admin</span></div></div>
+      <div class="card" data-id="barmenu"><img src="../assets/icons/icon-barmenu.svg" alt="" /><div><b>Bar Menu</b><span>Board + admin</span></div></div>
+      <div class="card" data-id="barinventory"><img src="../assets/icons/icon-barinventory.svg" alt="" /><div><b>Bar Inventory</b><span>Stock tracking</span></div></div>
+      <div class="card" data-id="barbooking"><img src="../assets/icons/icon-bar-booking.svg" alt="" /><div><b>Bar Booking</b><span>Requests + approvals</span></div></div>
+      <div class="card" data-id="auction"><img src="../assets/icons/icon-auction.svg" alt="" /><div><b>Auction</b><span>Board + admin</span></div></div>
+      <div class="card" data-id="raffle"><img src="../assets/icons/icon-raffle.svg" alt="" /><div><b>Raffle</b><span>Board + admin</span></div></div>
+    </div>
+
+    <div class="hint"><b>Phase 1 prototype.</b> Clicking a system loads its real, live page inside this window. No installer, no auto-launch yet - just proving the shell mechanism itself works.</div>
+  </main>
+
+  <script>
+    const rail = document.getElementById('rail')
+    const home = document.getElementById('home')
+    const loading = document.getElementById('loading')
+    const loadingSpinner = document.getElementById('loading-spinner')
+    const loadingErrorIcon = document.getElementById('loading-error-icon')
+    const loadingLabel = document.getElementById('loading-label')
+    const loadingRetry = document.getElementById('loading-retry')
+    let currentSystemId = 'home'
+
+    function setRailHighlight(id) {
+      currentSystemId = id
+      for (const btn of rail.querySelectorAll('button')) {
+        btn.classList.toggle('active', btn.dataset.id === id)
+      }
+      home.classList.toggle('hidden', id !== 'home')
+    }
+
+    function setActive(id) {
+      setRailHighlight(id)
+      window.mslsc.selectSystem(id)
+    }
+
+    // Main process already knows to reopen the last system on launch -
+    // this just keeps the rail's highlighted icon in sync with that,
+    // without asking main to do it all over again.
+    window.mslsc.onRestoreRailHighlight((id) => setRailHighlight(id))
+
+    window.mslsc.onLoadingState((state) => {
+      loading.classList.toggle('visible', Boolean(state.show))
+      if (!state.show) return
+      loadingSpinner.style.display = state.error ? 'none' : 'block'
+      loadingErrorIcon.style.display = state.error ? 'block' : 'none'
+      loadingRetry.style.display = state.error ? 'inline-block' : 'none'
+      loadingLabel.innerHTML = state.error
+        ? `Couldn't load <b>${state.label}</b> — check the connection and try again.`
+        : `Loading <b>${state.label}</b>…`
+    })
+
+    loadingRetry.addEventListener('click', () => window.mslsc.retrySystem(currentSystemId))
+
+    rail.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-id]')
+      if (btn) setActive(btn.dataset.id)
+    })
+
+    document.querySelectorAll('.card[data-id]').forEach((card) => {
+      card.addEventListener('click', () => setActive(card.dataset.id))
+    })
+
+    function tick() {
+      const now = new Date()
+      document.getElementById('clock').textContent = now.toLocaleTimeString('en-NZ', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'Pacific/Auckland',
+      })
+      document.getElementById('date').textContent = now.toLocaleDateString('en-NZ', {
+        weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Pacific/Auckland',
+      })
+      const hour = Number(now.toLocaleString('en-NZ', { hour: 'numeric', hour12: false, timeZone: 'Pacific/Auckland' }))
+      document.getElementById('greeting').textContent =
+        hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+    }
+    tick()
+    setInterval(tick, 30000)
+
+    // Midway Beach, Gisborne NZ - same source/location as the Hub's own
+    // weather widget, no API key needed.
+    const WEATHER_CODES = {
+      0: ['Clear sky', '☀️'], 1: ['Mostly clear', '🌤️'], 2: ['Partly cloudy', '⛅'], 3: ['Overcast', '☁️'],
+      45: ['Foggy', '🌫️'], 48: ['Foggy', '🌫️'],
+      51: ['Light drizzle', '🌦️'], 53: ['Drizzle', '🌦️'], 55: ['Heavy drizzle', '🌧️'],
+      61: ['Light rain', '🌦️'], 63: ['Rain', '🌧️'], 65: ['Heavy rain', '🌧️'],
+      71: ['Light snow', '🌨️'], 73: ['Snow', '🌨️'], 75: ['Heavy snow', '🌨️'],
+      80: ['Rain showers', '🌦️'], 81: ['Rain showers', '🌧️'], 82: ['Heavy showers', '⛈️'],
+      95: ['Thunderstorm', '⛈️'], 96: ['Thunderstorm', '⛈️'], 99: ['Thunderstorm', '⛈️'],
+    }
+
+    async function loadWeather() {
+      try {
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=-38.6623&longitude=178.0176&current=temperature_2m,weather_code,wind_speed_10m&timezone=Pacific%2FAuckland'
+        const response = await fetch(url)
+        if (!response.ok) throw new Error('bad response')
+        const data = await response.json()
+        const current = data.current
+        const [label, emoji] = WEATHER_CODES[current.weather_code] || ['Unknown', '🌡️']
+        document.getElementById('weather-icon').textContent = emoji
+        document.getElementById('weather-primary').textContent = `${Math.round(current.temperature_2m)}°C · ${label}`
+        document.getElementById('weather-secondary').textContent = `Midway Beach · wind ${Math.round(current.wind_speed_10m)} km/h`
+      } catch {
+        document.getElementById('weather-primary').textContent = 'Weather unavailable'
+      }
+    }
+    loadWeather()
+    setInterval(loadWeather, 15 * 60 * 1000)
+  </script>
+</body>
+</html>

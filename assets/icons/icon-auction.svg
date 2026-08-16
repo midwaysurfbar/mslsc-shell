@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#173F4F"/>
+  <g transform="rotate(-45 256 210)">
+    <rect x="196" y="96" width="120" height="64" rx="16" fill="#2D7F8C"/>
+    <rect x="234" y="150" width="44" height="150" rx="16" fill="#2D7F8C"/>
+  </g>
+  <rect x="290" y="340" width="150" height="32" rx="14" fill="#f6e8a6"/>
+  <text x="256" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="white">AUCTION</text>
+</svg>

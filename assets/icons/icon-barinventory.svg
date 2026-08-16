@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#173F4F"/>
+  <path d="M160 190 L256 145 L352 190 L352 320 L256 365 L160 320 Z" fill="#2D7F8C"/>
+  <path d="M160 190 L256 235 L352 190" stroke="#173F4F" stroke-width="10" fill="none" stroke-linejoin="round"/>
+  <line x1="256" y1="235" x2="256" y2="365" stroke="#173F4F" stroke-width="10"/>
+  <path d="M212 250 L245 283 L300 218" stroke="#f6e8a6" stroke-width="14" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="440" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="white">INVENTORY</text>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#173F4F"/>
+  <line x1="256" y1="228" x2="256" y2="130" stroke="#2D7F8C" stroke-width="14"/>
+  <line x1="256" y1="228" x2="354" y2="228" stroke="#2D7F8C" stroke-width="14"/>
+  <line x1="256" y1="228" x2="158" y2="228" stroke="#2D7F8C" stroke-width="14"/>
+  <line x1="256" y1="228" x2="198" y2="308" stroke="#2D7F8C" stroke-width="14"/>
+  <line x1="256" y1="228" x2="314" y2="308" stroke="#2D7F8C" stroke-width="14"/>
+  <rect x="222" y="96" width="68" height="68" rx="18" fill="#2D7F8C"/>
+  <rect x="320" y="194" width="68" height="68" rx="18" fill="#2D7F8C"/>
+  <rect x="124" y="194" width="68" height="68" rx="18" fill="#2D7F8C"/>
+  <rect x="164" y="274" width="68" height="68" rx="18" fill="#2D7F8C"/>
+  <rect x="280" y="274" width="68" height="68" rx="18" fill="#2D7F8C"/>
+  <circle cx="256" cy="228" r="40" fill="#f6e8a6"/>
+  <text x="256" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="46" font-weight="700" fill="white">HUB</text>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#075985"/>
+  <circle cx="256" cy="165" r="66" fill="#fef08a"/>
+  <path d="M110 392c18-98 76-145 146-145s128 47 146 145" fill="#7dd3fc"/>
+  <circle cx="378" cy="335" r="76" fill="#16a34a"/>
+  <path d="M340 335l25 26 51-58" fill="none" stroke="white" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="470" text-anchor="middle" font-family="Arial" font-size="46" font-weight="700" fill="white">SIGN IN</text>
+</svg>
