@@ -162,6 +162,11 @@ function createWindow() {
   mainWindow.contentView.addChildView(homeView)
   homeView.webContents.loadFile(path.join(__dirname, 'renderer', 'index.html'))
   homeView.setBounds({ x: 0, y: 0, ...mainWindowFullSize() })
+  if (process.env.MSLSC_DEBUG) {
+    homeView.webContents.openDevTools({ mode: 'detach' })
+    homeView.webContents.on('did-fail-load', (_e, code, desc) => console.log('DID-FAIL-LOAD', code, desc))
+    homeView.webContents.on('console-message', (_e, level, message) => console.log('RENDERER-CONSOLE', level, message))
+  }
 
   // Reopen to whichever system was open last, instead of always landing
   // on Home - only once the renderer's own listeners are ready.
