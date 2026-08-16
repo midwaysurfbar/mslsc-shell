@@ -10,18 +10,36 @@ const fs = require('node:fs')
 
 const RAIL_WIDTH = 64
 
-// Straight to each system's admin/management area, not its public board
-// or kiosk screen - those already run on their own dedicated always-on
-// PCs (the venue PC's kiosk, the Bar Menu display PC), so this shell is
-// specifically for the management side. Bar Inventory has no separate
-// /admin route - its PIN gate sits right at the root.
+// Every addressable page across all 6 systems, keyed by a unique id - the
+// rail only ever opens the 6 base ids (attendance, barmenu, ...), which
+// point straight at admin/management (the public board/kiosk screens
+// already run on their own dedicated always-on PCs). The home screen's
+// cards additionally link to every other page, same set as the original
+// web Hub, all addressable through this same map.
 const SYSTEMS = {
-  attendance: { label: 'Attendance', url: 'https://midwaysurfregister.vercel.app/admin' },
-  barmenu: { label: 'Bar Menu', url: 'https://midwaysurfbarmenu.vercel.app/admin' },
+  attendance: { label: 'Attendance Admin', url: 'https://midwaysurfregister.vercel.app/admin' },
+  'attendance-kiosk': { label: 'Sign-In Kiosk', url: 'https://midwaysurfregister.vercel.app/' },
+  'attendance-dashboard': { label: 'Dashboard', url: 'https://midwaysurfregister.vercel.app/dashboard' },
+  'attendance-barnotes': { label: 'Bar Notes', url: 'https://midwaysurfregister.vercel.app/bar-notes' },
+  'attendance-dutysummary': { label: 'Duty Summary', url: 'https://midwaysurfregister.vercel.app/duty-summary' },
+  'attendance-mobilemembers': { label: 'Mobile Members', url: 'https://midwaysurfregister.vercel.app/mobile-members' },
+
+  barmenu: { label: 'Bar Menu Admin', url: 'https://midwaysurfbarmenu.vercel.app/admin' },
+  'barmenu-board': { label: 'Menu Board', url: 'https://midwaysurfbarmenu.vercel.app/' },
+
   barinventory: { label: 'Bar Inventory', url: 'https://midwaysurfbarinventory.vercel.app/' },
-  barbooking: { label: 'Bar Booking', url: 'https://midwaysurfbarbookings.vercel.app/admin' },
-  auction: { label: 'Auction', url: 'https://midwaysurfauction.vercel.app/admin' },
-  raffle: { label: 'Raffle', url: 'https://midwaysurfraffle.vercel.app/admin' },
+
+  barbooking: { label: 'Bar Booking Admin', url: 'https://midwaysurfbarbookings.vercel.app/admin' },
+  'barbooking-login': { label: 'Open / Login', url: 'https://midwaysurfbarbookings.vercel.app/' },
+  'barbooking-calendar': { label: 'Calendar', url: 'https://midwaysurfbarbookings.vercel.app/calendar' },
+  'barbooking-approvals': { label: 'Approvals', url: 'https://midwaysurfbarbookings.vercel.app/approvals' },
+
+  auction: { label: 'Auction Admin', url: 'https://midwaysurfauction.vercel.app/admin' },
+  'auction-board': { label: 'Board', url: 'https://midwaysurfauction.vercel.app/board' },
+
+  raffle: { label: 'Raffle Admin', url: 'https://midwaysurfraffle.vercel.app/admin' },
+  'raffle-board': { label: 'Board', url: 'https://midwaysurfraffle.vercel.app/board' },
+  'raffle-fundraiser': { label: 'Fundraiser', url: 'https://midwaysurfraffle.vercel.app/fundraiser' },
 }
 
 let mainWindow = null

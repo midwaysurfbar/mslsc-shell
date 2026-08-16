@@ -96,7 +96,7 @@
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 14px;
     margin-top: 8px;
   }
@@ -106,16 +106,32 @@
     border-radius: 12px;
     padding: 16px;
     box-shadow: 0 5px 18px rgba(23,63,79,0.08);
-    cursor: pointer;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 12px;
-    transition: transform 0.1s, box-shadow 0.1s;
   }
-  .card:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(23,63,79,0.14); }
+  .card-head { display: flex; align-items: center; gap: 12px; }
   .card img { width: 40px; height: 40px; border-radius: 10px; flex: 0 0 auto; }
   .card b { display: block; font-size: 0.92rem; color: var(--ink); }
-  .card span { font-size: 0.78rem; color: var(--ink-faint); }
+  .card-links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .card-links button {
+    -webkit-app-region: no-drag;
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--teal);
+    box-shadow: 0 3px 0 #17545e;
+    transform: translateY(0);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .card-links button:active { transform: translateY(3px); box-shadow: 0 0 0 #17545e; }
+  .card-links button.primary { background: var(--gold); color: var(--navy); box-shadow: 0 3px 0 #cdb96a; }
+  .card-links button.primary:active { box-shadow: 0 0 0 #cdb96a; }
 
   .hint {
     margin-top: 26px;
@@ -208,15 +224,57 @@
     </div>
 
     <div class="grid">
-      <div class="card" data-id="attendance"><img src="../assets/icons/icon-attendance.svg" alt="" /><div><b>Attendance</b><span>Admin</span></div></div>
-      <div class="card" data-id="barmenu"><img src="../assets/icons/icon-barmenu.svg" alt="" /><div><b>Bar Menu</b><span>Admin</span></div></div>
-      <div class="card" data-id="barinventory"><img src="../assets/icons/icon-barinventory.svg" alt="" /><div><b>Bar Inventory</b><span>Admin</span></div></div>
-      <div class="card" data-id="barbooking"><img src="../assets/icons/icon-bar-booking.svg" alt="" /><div><b>Bar Booking</b><span>Admin</span></div></div>
-      <div class="card" data-id="auction"><img src="../assets/icons/icon-auction.svg" alt="" /><div><b>Auction</b><span>Admin</span></div></div>
-      <div class="card" data-id="raffle"><img src="../assets/icons/icon-raffle.svg" alt="" /><div><b>Raffle</b><span>Admin</span></div></div>
+      <div class="card">
+        <div class="card-head"><img src="../assets/icons/icon-attendance.svg" alt="" /><b>Attendance</b></div>
+        <div class="card-links">
+          <button class="primary" data-id="attendance-kiosk">Sign-In Kiosk</button>
+          <button data-id="attendance">Admin</button>
+          <button data-id="attendance-dashboard">Dashboard</button>
+          <button data-id="attendance-barnotes">Bar Notes</button>
+          <button data-id="attendance-dutysummary">Duty Summary</button>
+          <button data-id="attendance-mobilemembers">Mobile Members</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><img src="../assets/icons/icon-barmenu.svg" alt="" /><b>Bar Menu</b></div>
+        <div class="card-links">
+          <button class="primary" data-id="barmenu-board">Menu Board</button>
+          <button data-id="barmenu">Admin</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><img src="../assets/icons/icon-barinventory.svg" alt="" /><b>Bar Inventory</b></div>
+        <div class="card-links">
+          <button class="primary" data-id="barinventory">Open</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><img src="../assets/icons/icon-bar-booking.svg" alt="" /><b>Bar Booking</b></div>
+        <div class="card-links">
+          <button class="primary" data-id="barbooking-login">Open / Login</button>
+          <button data-id="barbooking-calendar">Calendar</button>
+          <button data-id="barbooking-approvals">Approvals</button>
+          <button data-id="barbooking">Admin</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><img src="../assets/icons/icon-auction.svg" alt="" /><b>Auction</b></div>
+        <div class="card-links">
+          <button class="primary" data-id="auction-board">Board</button>
+          <button data-id="auction">Admin</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><img src="../assets/icons/icon-raffle.svg" alt="" /><b>Raffle</b></div>
+        <div class="card-links">
+          <button class="primary" data-id="raffle-board">Board</button>
+          <button data-id="raffle-fundraiser">Fundraiser</button>
+          <button data-id="raffle">Admin</button>
+        </div>
+      </div>
     </div>
 
-    <div class="hint">Clicking a system loads its real, live page inside this window. Window size, the last system you had open, and this app stay remembered between launches - closing the window just tucks it into the system tray.</div>
+    <div class="hint">Clicking a link loads its real, live page inside this window. Window size, the last system you had open, and this app stay remembered between launches - closing the window just tucks it into the system tray.</div>
   </main>
 
   <script>
@@ -231,8 +289,11 @@
 
     function setRailHighlight(id) {
       currentSystemId = id
+      // Sub-links (e.g. "attendance-kiosk") still light up their system's
+      // one rail icon ("attendance") - the rail only ever shows the 6 base ids.
+      const baseId = id.split('-')[0]
       for (const btn of rail.querySelectorAll('button')) {
-        btn.classList.toggle('active', btn.dataset.id === id)
+        btn.classList.toggle('active', btn.dataset.id === baseId)
       }
       home.classList.toggle('hidden', id !== 'home')
     }
@@ -265,8 +326,9 @@
       if (btn) setActive(btn.dataset.id)
     })
 
-    document.querySelectorAll('.card[data-id]').forEach((card) => {
-      card.addEventListener('click', () => setActive(card.dataset.id))
+    document.querySelector('.grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.card-links button[data-id]')
+      if (btn) setActive(btn.dataset.id)
     })
 
     function tick() {
