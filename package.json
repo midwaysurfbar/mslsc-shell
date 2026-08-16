@@ -8,8 +8,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux"
+    "dist:win": "electron-builder --win --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -17,6 +17,7 @@
   },
   "build": {
     "appId": "nz.org.mslsc.shell",
+    "publish": null,
     "productName": "MSLSC",
     "directories": {
       "output": "release"
