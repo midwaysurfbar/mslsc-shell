@@ -10,13 +10,18 @@ const fs = require('node:fs')
 
 const RAIL_WIDTH = 64
 
+// Straight to each system's admin/management area, not its public board
+// or kiosk screen - those already run on their own dedicated always-on
+// PCs (the venue PC's kiosk, the Bar Menu display PC), so this shell is
+// specifically for the management side. Bar Inventory has no separate
+// /admin route - its PIN gate sits right at the root.
 const SYSTEMS = {
-  attendance: { label: 'Attendance', url: 'https://midwaysurfregister.vercel.app/' },
-  barmenu: { label: 'Bar Menu', url: 'https://midwaysurfbarmenu.vercel.app/' },
+  attendance: { label: 'Attendance', url: 'https://midwaysurfregister.vercel.app/admin' },
+  barmenu: { label: 'Bar Menu', url: 'https://midwaysurfbarmenu.vercel.app/admin' },
   barinventory: { label: 'Bar Inventory', url: 'https://midwaysurfbarinventory.vercel.app/' },
-  barbooking: { label: 'Bar Booking', url: 'https://midwaysurfbarbookings.vercel.app/' },
-  auction: { label: 'Auction', url: 'https://midwaysurfauction.vercel.app/' },
-  raffle: { label: 'Raffle', url: 'https://midwaysurfraffle.vercel.app/' },
+  barbooking: { label: 'Bar Booking', url: 'https://midwaysurfbarbookings.vercel.app/admin' },
+  auction: { label: 'Auction', url: 'https://midwaysurfauction.vercel.app/admin' },
+  raffle: { label: 'Raffle', url: 'https://midwaysurfraffle.vercel.app/admin' },
 }
 
 let mainWindow = null
