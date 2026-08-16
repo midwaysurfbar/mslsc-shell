@@ -2,14 +2,14 @@
   "name": "mslsc-shell",
   "productName": "MSLSC",
   "private": true,
-  "version": "0.1.0",
-  "description": "Phase 1 local prototype - a desktop shell that loads the six live MSLSC systems inside one window instead of six browser tabs.",
+  "version": "0.2.0",
+  "description": "A desktop shell that loads the six live MSLSC systems inside one window instead of six browser tabs.",
   "author": "Midway Surf Lifesaving Club",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist:win": "electron-builder --win --publish never",
-    "dist:linux": "electron-builder --linux --publish never"
+    "dist:win": "electron-builder --win --publish always",
+    "dist:linux": "electron-builder --linux --publish always"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -17,7 +17,11 @@
   },
   "build": {
     "appId": "nz.org.mslsc.shell",
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "midwaysurfbar",
+      "repo": "mslsc-shell"
+    },
     "productName": "MSLSC",
     "directories": {
       "output": "release"
@@ -40,9 +44,14 @@
       "shortcutName": "MSLSC"
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "icon": "build/icon.png",
       "category": "Utility"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

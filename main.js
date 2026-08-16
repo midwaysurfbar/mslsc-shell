@@ -1,9 +1,9 @@
 const { app, BaseWindow, WebContentsView, ipcMain, Menu, Tray, nativeImage } = require('electron')
+const { autoUpdater } = require('electron-updater')
 const path = require('node:path')
 const fs = require('node:fs')
 
-// Phase 1 local prototype (see the "MSLSC Systems Shell" scoping note) -
-// a desktop window that loads the six live MSLSC systems inside their
+// A desktop window that loads the six live MSLSC systems inside their
 // own view, switched via a rail on the left, instead of six separate
 // browser tabs. Every system's real, already-deployed URL is used as-is
 // - nothing about the six systems themselves changes.
@@ -239,21 +239,66 @@ function createWindow() {
   })
 }
 
+let updateReady = false
+
 function createTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon-hub-tray.png'))
   tray = new Tray(icon)
   tray.setToolTip('MSLSC')
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      { label: 'Open MSLSC', click: () => { mainWindow.show(); mainWindow.focus() } },
-      { type: 'separator' },
-      { label: 'Quit', click: () => app.quit() },
-    ]),
-  )
+  refreshTrayMenu()
   tray.on('click', () => {
     if (mainWindow.isVisible()) mainWindow.hide()
     else { mainWindow.show(); mainWindow.focus() }
   })
+}
+
+/** Rebuilds the tray context menu - called at startup, and again once an
+ * update has finished downloading so a "Restart to Update" item appears. */
+function refreshTrayMenu() {
+  if (!tray) return
+  const items = [
+    { label: 'Open MSLSC', click: () => { mainWindow.show(); mainWindow.focus() } },
+  ]
+  if (updateReady) {
+    items.push({ type: 'separator' })
+    items.push({ label: 'Restart to Update', click: () => autoUpdater.quitAndInstall() })
+  }
+  items.push({ type: 'separator' })
+  items.push({ label: 'Quit', click: () => app.quit() })
+  tray.setContextMenu(Menu.buildFromTemplate(items))
+  tray.setToolTip(updateReady ? 'MSLSC - update ready, restart to apply' : 'MSLSC')
+}
+
+// --- Auto-update: checks GitHub Releases (midwaysurfbar/mslsc-shell),
+// downloads silently in the background, and installs automatically the
+// next time the app actually quits (tray -> Quit, or a machine reboot) -
+// no one needs to hunt down a fresh installer from GitHub by hand again.
+// Only runs against the real packaged app (`npm start` dev mode has no
+// update feed bundled in, and would just log a harmless "not packaged"
+// error if this ran unguarded).
+function setupAutoUpdate() {
+  if (!app.isPackaged) return
+
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  if (process.env.MSLSC_DEBUG) {
+    autoUpdater.logger = console
+  }
+
+  autoUpdater.on('update-downloaded', () => {
+    updateReady = true
+    refreshTrayMenu()
+  })
+  autoUpdater.on('error', (err) => {
+    if (process.env.MSLSC_DEBUG) console.log('AUTO-UPDATE ERROR', err)
+  })
+
+  autoUpdater.checkForUpdates()
+  // The app is designed to live in the tray for days at a time rather
+  // than being relaunched daily, so a startup-only check isn't enough -
+  // check periodically too.
+  setInterval(() => autoUpdater.checkForUpdates(), 4 * 60 * 60 * 1000)
 }
 
 app.whenReady().then(() => {
@@ -263,6 +308,7 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(null)
   createWindow()
   createTray()
+  setupAutoUpdate()
 })
 
 app.on('before-quit', () => {
