@@ -20,7 +20,8 @@
     "publish": {
       "provider": "github",
       "owner": "midwaysurfbar",
-      "repo": "mslsc-shell"
+      "repo": "mslsc-shell",
+      "releaseType": "release"
     },
     "productName": "MSLSC",
     "directories": {
