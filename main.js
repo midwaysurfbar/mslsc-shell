@@ -1,22 +1,24 @@
-const { app, BaseWindow, WebContentsView, ipcMain, Menu, Tray, nativeImage } = require('electron')
+const { app, BaseWindow, WebContentsView, ipcMain, Menu, Tray, nativeImage, shell, dialog } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const path = require('node:path')
 const fs = require('node:fs')
 
-// A desktop window that loads the six live MSLSC systems inside their
-// own view, switched via a rail on the left, instead of six separate
-// browser tabs. Every system's real, already-deployed URL is used as-is
-// - nothing about the six systems themselves changes.
+// A desktop window that loads the live MSLSC systems inside their own
+// view, switched via a rail on the left, instead of a dozen browser
+// tabs. Every system's real, already-deployed URL is used as-is -
+// nothing about the systems themselves changes.
 
 const RAIL_WIDTH = 64
 
-// Every addressable page across all 6 systems, keyed by a unique id - the
-// rail only ever opens the 6 base ids (attendance, barmenu, ...), which
-// point straight at admin/management (the public board/kiosk screens
-// already run on their own dedicated always-on PCs). The home screen's
-// cards additionally link to every other page, same set as the original
-// web Hub, all addressable through this same map.
+// Every addressable page, keyed by a unique id - the rail opens the base
+// ids (hub, attendance, barmenu, ...); the home screen's cards
+// additionally link to every sub-page, all addressable through this map.
+// The "hub" entry loads the live Systems Hub website, which is where the
+// live tiles (venue signal health, cash float, inventory quick actions)
+// and anything added there in future show up automatically.
 const SYSTEMS = {
+  hub: { label: 'Systems Hub', url: 'https://midwaysurfhub.vercel.app/' },
+
   attendance: { label: 'Attendance Admin', url: 'https://midwaysurfregister.vercel.app/admin' },
   'attendance-kiosk': { label: 'Sign-In Kiosk', url: 'https://midwaysurfregister.vercel.app/' },
   'attendance-dashboard': { label: 'Dashboard', url: 'https://midwaysurfregister.vercel.app/dashboard' },
@@ -34,12 +36,69 @@ const SYSTEMS = {
   'barbooking-calendar': { label: 'Calendar', url: 'https://midwaysurfbarbookings.vercel.app/calendar' },
   'barbooking-approvals': { label: 'Approvals', url: 'https://midwaysurfbarbookings.vercel.app/approvals' },
 
+  nippers: { label: 'Nippers Check-In', url: 'https://midwaysurfnippers.vercel.app/checkin' },
+  'nippers-checkout': { label: 'Nippers Check-Out', url: 'https://midwaysurfnippers.vercel.app/checkout' },
+  'nippers-children': { label: 'Children', url: 'https://midwaysurfnippers.vercel.app/children' },
+  'nippers-agegroups': { label: 'Age Groups', url: 'https://midwaysurfnippers.vercel.app/age-groups' },
+  'nippers-report': { label: 'Nippers Report', url: 'https://midwaysurfnippers.vercel.app/report' },
+
+  foodcost: { label: 'Food Cost Builder', url: 'https://midwaysurffoodcost.vercel.app/' },
+
   auction: { label: 'Auction Admin', url: 'https://midwaysurfauction.vercel.app/admin' },
   'auction-board': { label: 'Board', url: 'https://midwaysurfauction.vercel.app/board' },
 
   raffle: { label: 'Raffle Admin', url: 'https://midwaysurfraffle.vercel.app/admin' },
   'raffle-board': { label: 'Board', url: 'https://midwaysurfraffle.vercel.app/board' },
   'raffle-fundraiser': { label: 'Fundraiser', url: 'https://midwaysurfraffle.vercel.app/fundraiser' },
+}
+
+// The Video Jukebox is its own installed desktop app (local video
+// library + a fullscreen deck for the TV), not a website - so its rail
+// button launches that app rather than loading a URL in-window.
+const EXTERNAL_APPS = {
+  jukebox: { label: 'Video Jukebox' },
+}
+
+function launchJukebox() {
+  const candidates = []
+  if (process.platform === 'win32') {
+    const lad = process.env.LOCALAPPDATA || ''
+    const pf = process.env.ProgramFiles || 'C:\\Program Files'
+    const pfx = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'
+    const pd = process.env.ProgramData || 'C:\\ProgramData'
+    const ad = process.env.APPDATA || ''
+    candidates.push(
+      path.join(lad, 'Programs', 'MSLSC Jukebox', 'MSLSC Jukebox.exe'),
+      path.join(pf, 'MSLSC Jukebox', 'MSLSC Jukebox.exe'),
+      path.join(pfx, 'MSLSC Jukebox', 'MSLSC Jukebox.exe'),
+      path.join(pd, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'MSLSC Jukebox.lnk'),
+      path.join(ad, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'MSLSC Jukebox.lnk'),
+    )
+  } else {
+    const home = app.getPath('home')
+    candidates.push(
+      path.join(home, 'Applications', 'MSLSC Jukebox.AppImage'),
+      path.join(home, 'Applications', 'MSLSC-Jukebox.AppImage'),
+      path.join(home, 'Downloads', 'MSLSC Jukebox.AppImage'),
+    )
+  }
+
+  const found = candidates.find((p) => {
+    try { return fs.existsSync(p) } catch { return false }
+  })
+
+  if (found) {
+    shell.openPath(found).then((err) => {
+      if (err) dialog.showErrorBox('Video Jukebox', `Couldn't launch the Jukebox app:\n${err}`)
+    })
+  } else {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Video Jukebox',
+      message: "The Video Jukebox app isn't installed on this PC yet.",
+      detail: 'Install it from the mslsc-jukebox GitHub releases and this button will launch it.',
+    })
+  }
 }
 
 let mainWindow = null
@@ -226,6 +285,7 @@ function createWindow() {
   })
 
   ipcMain.on('select-system', (_event, id) => {
+    if (EXTERNAL_APPS[id]) { if (id === 'jukebox') launchJukebox(); return }
     if (id === 'home') showHome()
     else showSystem(id)
   })
