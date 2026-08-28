@@ -145,28 +145,50 @@
   }
   .hint b { color: var(--ink); }
 
-  /* Live venue Wi-Fi / Bluetooth strip - always visible on the home
-     screen, polled from the Hub's venue-signal function. */
+  /* Venue dashboard strip - always visible on the home screen. A live
+     audio EQ (system-audio loopback, reacts to the Jukebox / iTunes /
+     anything playing) as the centrepiece, with the venue Wi-Fi and
+     Bluetooth signal read-outs to the side (polled from the Hub's
+     venue-signal function). */
   .signal-strip {
     display: flex;
-    align-items: center;
-    gap: 20px;
+    align-items: stretch;
+    gap: 18px;
     background: linear-gradient(#20343d, #172830);
     border: 1px solid #0e1c22;
     border-radius: 14px;
-    padding: 12px 18px;
+    padding: 12px 16px;
     margin-bottom: 18px;
     box-shadow: inset 0 2px 10px rgba(0,0,0,0.37), 0 4px 12px rgba(23,63,79,0.12);
-    flex-wrap: wrap;
+    min-height: 128px;
   }
-  .signal-part { display: flex; align-items: center; gap: 12px; }
-  .signal-gauge { width: 84px; height: auto; flex: 0 0 auto; }
-  .signal-bars { width: 60px; height: auto; flex: 0 0 auto; }
-  .signal-text .signal-primary { font-weight: 800; color: #f6e8a6; font-size: 0.98rem; line-height: 1.15; }
-  .signal-text .signal-secondary { font-size: 0.74rem; color: #a9c2c8; margin-top: 2px; }
-  .signal-divider { width: 1px; align-self: stretch; background: rgba(255,255,255,0.12); }
+  .signal-side {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    flex: 0 0 auto;
+    width: 210px;
+  }
+  .signal-part { display: flex; align-items: center; gap: 10px; }
+  .signal-gauge { width: 70px; height: auto; flex: 0 0 auto; }
+  .signal-bars { width: 48px; height: auto; flex: 0 0 auto; }
+  .signal-text { min-width: 0; }
+  .signal-text .signal-primary { font-weight: 800; color: #f6e8a6; font-size: 0.92rem; line-height: 1.15; }
+  .signal-text .signal-secondary { font-size: 0.72rem; color: #a9c2c8; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .signal-eq { flex: 1 1 auto; min-width: 0; position: relative; align-self: stretch; }
+  #eq-canvas { width: 100%; height: 100%; display: block; }
+  .eq-idle {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #4a6572; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase;
+    pointer-events: none;
+  }
+  .eq-idle.hidden { display: none; }
+
   .signal-status {
-    margin-left: auto;
+    align-self: center;
     font-size: 0.76rem;
     font-weight: 750;
     padding: 5px 12px;
@@ -174,6 +196,7 @@
     background: rgba(255,255,255,0.08);
     color: #a9c2c8;
     white-space: nowrap;
+    flex: 0 0 auto;
   }
   .signal-status.live { color: #7ee0a8; background: rgba(63,174,109,0.16); }
   .signal-status.stale { color: #e8c07a; background: rgba(224,165,58,0.16); }
@@ -186,6 +209,12 @@
   .signal-strip.dim .sig-g-zone { stroke: #4a5b62 !important; }
   .signal-strip.dim .sig-g-needle { stroke: #6b7c83; }
   .signal-strip.dim .sig-b-on { fill: #5a6f76; }
+
+  @media (max-width: 720px) {
+    .signal-strip { flex-wrap: wrap; }
+    .signal-side { width: auto; flex-direction: row; }
+    .signal-eq { flex-basis: 100%; min-height: 90px; }
+  }
 
   .loading {
     position: fixed;
@@ -270,20 +299,25 @@
     </div>
 
     <section class="signal-strip" id="signal-strip">
-      <div class="signal-part">
-        <svg class="signal-gauge" id="sig-gauge" viewBox="0 0 120 74" aria-hidden="true"></svg>
-        <div class="signal-text">
-          <div class="signal-primary" id="sig-wifi-primary">Wi-Fi —</div>
-          <div class="signal-secondary" id="sig-wifi-secondary">venue PC</div>
+      <div class="signal-side">
+        <div class="signal-part">
+          <svg class="signal-gauge" id="sig-gauge" viewBox="0 0 120 74" aria-hidden="true"></svg>
+          <div class="signal-text">
+            <div class="signal-primary" id="sig-wifi-primary">Wi-Fi —</div>
+            <div class="signal-secondary" id="sig-wifi-secondary">venue PC</div>
+          </div>
+        </div>
+        <div class="signal-part">
+          <svg class="signal-bars" id="sig-bars" viewBox="0 0 92 56" aria-hidden="true"></svg>
+          <div class="signal-text">
+            <div class="signal-primary" id="sig-bt-primary">Bluetooth —</div>
+            <div class="signal-secondary" id="sig-bt-secondary">&nbsp;</div>
+          </div>
         </div>
       </div>
-      <div class="signal-divider"></div>
-      <div class="signal-part">
-        <svg class="signal-bars" id="sig-bars" viewBox="0 0 92 56" aria-hidden="true"></svg>
-        <div class="signal-text">
-          <div class="signal-primary" id="sig-bt-primary">Bluetooth —</div>
-          <div class="signal-secondary" id="sig-bt-secondary">&nbsp;</div>
-        </div>
+      <div class="signal-eq">
+        <canvas id="eq-canvas" width="1000" height="128"></canvas>
+        <div class="eq-idle" id="eq-idle">no audio playing</div>
       </div>
       <div class="signal-status" id="sig-status">Connecting…</div>
     </section>
@@ -362,7 +396,7 @@
       </div>
     </div>
 
-    <div class="hint">Clicking a link loads its real, live page inside this window. Video Jukebox opens as its own app. Window size, the last system you had open, and this app stay remembered between launches - closing the window just tucks it into the system tray.</div>
+    <div class="hint">The strip up top shows the venue Wi-Fi / Bluetooth signal and a live audio meter (whatever is playing through the sound system). Clicking a link loads its real, live page inside this window. Video Jukebox opens as its own app. Window size, the last system you had open, and this app stay remembered between launches - closing the window just tucks it into the system tray.</div>
   </main>
 
   <script>
@@ -632,6 +666,103 @@
     drawGauge(null); drawBars(null, false)
     loadSignal()
     setInterval(loadSignal, 20000)
+
+    // --- Live audio EQ (system-audio loopback) ---------------------
+    // Captures the PC's audio output mix - reacts to whatever is
+    // playing (the Video Jukebox, iTunes, a browser tab, anything).
+    // Electron's main process grants this via setDisplayMediaRequestHandler
+    // with audio:'loopback', so there's no picker / no permission prompt.
+    const eqCanvas = document.getElementById('eq-canvas')
+    const eqIdle = document.getElementById('eq-idle')
+    const eqCtx = eqCanvas.getContext('2d')
+    const EQ_BARS = 44
+    let eqAnalyser = null
+    let eqData = null
+    let eqSilentFrames = 0
+
+    function drawEqFrame() {
+      requestAnimationFrame(drawEqFrame)
+      const W = eqCanvas.width, H = eqCanvas.height
+      // Skip work while the home screen is hidden (a system view is open).
+      if (eqCanvas.offsetParent === null) return
+      eqCtx.clearRect(0, 0, W, H)
+
+      const base = Math.round(H * 0.66)
+      const gap = 3
+      const bw = (W - gap * (EQ_BARS - 1)) / EQ_BARS
+      let peak = 0
+
+      if (eqAnalyser) eqAnalyser.getByteFrequencyData(eqData)
+
+      for (let i = 0; i < EQ_BARS; i++) {
+        let v = 0
+        if (eqAnalyser) {
+          // log-ish mapping so bass doesn't hog the left; use the lower
+          // ~65% of bins (the musical range).
+          const lo = Math.floor(Math.pow(i / EQ_BARS, 1.8) * eqData.length * 0.62)
+          const hi = Math.max(lo + 1, Math.floor(Math.pow((i + 1) / EQ_BARS, 1.8) * eqData.length * 0.62))
+          let s = 0
+          for (let b = lo; b < hi; b++) s = Math.max(s, eqData[b])
+          v = s / 255
+        }
+        if (v > peak) peak = v
+        const bh = Math.max(2, v * base * 0.94)
+        const x = i * (bw + gap)
+
+        const grad = eqCtx.createLinearGradient(0, base, 0, 0)
+        grad.addColorStop(0, '#3fae6d')
+        grad.addColorStop(0.55, '#e0a53a')
+        grad.addColorStop(1, '#e34b3a')
+        eqCtx.fillStyle = grad
+        eqCtx.fillRect(x, base - bh, bw, bh)
+
+        // reflection
+        const rg = eqCtx.createLinearGradient(0, base, 0, H)
+        rg.addColorStop(0, 'rgba(120,180,150,0.30)')
+        rg.addColorStop(1, 'rgba(120,180,150,0)')
+        eqCtx.fillStyle = rg
+        eqCtx.fillRect(x, base, bw, Math.min(bh * 0.6, H - base))
+      }
+
+      if (peak < 0.02) eqSilentFrames++
+      else eqSilentFrames = 0
+      eqIdle.classList.toggle('hidden', !eqAnalyser || eqSilentFrames < 60)
+    }
+
+    async function startAudioCapture() {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+        stream.getVideoTracks().forEach((t) => t.stop())
+        const audioTracks = stream.getAudioTracks()
+        if (!audioTracks.length) throw new Error('no audio track')
+        const actx = new (window.AudioContext || window.webkitAudioContext)()
+        const src = actx.createMediaStreamSource(new MediaStream(audioTracks))
+        const an = actx.createAnalyser()
+        an.fftSize = 1024
+        an.smoothingTimeConstant = 0.78
+        const sink = actx.createGain()
+        sink.gain.value = 0
+        src.connect(an); an.connect(sink); sink.connect(actx.destination)
+        if (actx.state === 'suspended') actx.resume()
+        eqAnalyser = an
+        eqData = new Uint8Array(an.frequencyBinCount)
+        eqIdle.textContent = 'no audio playing'
+      } catch (e) {
+        eqAnalyser = null
+        eqIdle.textContent = 'audio meter unavailable'
+        eqIdle.classList.remove('hidden')
+      }
+    }
+
+    drawEqFrame()
+    startAudioCapture()
+    // Retry: a few seconds in (handler not ready), and once on the first
+    // user interaction (some Chromium builds still want a gesture).
+    setTimeout(() => { if (!eqAnalyser) startAudioCapture() }, 5000)
+    window.addEventListener('pointerdown', function once() {
+      window.removeEventListener('pointerdown', once)
+      if (!eqAnalyser) startAudioCapture()
+    })
   </script>
 </body>
 </html>

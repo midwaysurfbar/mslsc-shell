@@ -1,4 +1,4 @@
-const { app, BaseWindow, WebContentsView, ipcMain, Menu, Tray, nativeImage, shell, dialog } = require('electron')
+const { app, BaseWindow, WebContentsView, ipcMain, Menu, Tray, nativeImage, shell, dialog, session, desktopCapturer } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const path = require('node:path')
 const fs = require('node:fs')
@@ -358,11 +358,27 @@ function setupAutoUpdate() {
   setInterval(() => autoUpdater.checkForUpdates(), 4 * 60 * 60 * 1000)
 }
 
+// The home screen's audio EQ captures the PC's audio output mix. Grant
+// getDisplayMedia({audio:true}) with loopback audio and no picker - the
+// renderer only ever uses the audio track (the screen video track is
+// stopped immediately).
+function setupAudioLoopback() {
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] })
+      .then((sources) => {
+        try { callback({ video: sources[0], audio: 'loopback' }) }
+        catch { try { callback({}) } catch { /* renderer went away */ } }
+      })
+      .catch(() => { try { callback({}) } catch { /* noop */ } })
+  }, { useSystemPicker: false })
+}
+
 app.whenReady().then(() => {
   // No end user needs File/Edit/View/Window/Help on a kiosk-style app -
   // real menu/keyboard-shortcut design is a later phase, this just
   // removes Electron's default dev menu for a cleaner first look.
   Menu.setApplicationMenu(null)
+  setupAudioLoopback()
   createWindow()
   createTray()
   setupAutoUpdate()
