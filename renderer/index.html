@@ -145,6 +145,48 @@
   }
   .hint b { color: var(--ink); }
 
+  /* Live venue Wi-Fi / Bluetooth strip - always visible on the home
+     screen, polled from the Hub's venue-signal function. */
+  .signal-strip {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: linear-gradient(#20343d, #172830);
+    border: 1px solid #0e1c22;
+    border-radius: 14px;
+    padding: 12px 18px;
+    margin-bottom: 18px;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.37), 0 4px 12px rgba(23,63,79,0.12);
+    flex-wrap: wrap;
+  }
+  .signal-part { display: flex; align-items: center; gap: 12px; }
+  .signal-gauge { width: 84px; height: auto; flex: 0 0 auto; }
+  .signal-bars { width: 60px; height: auto; flex: 0 0 auto; }
+  .signal-text .signal-primary { font-weight: 800; color: #f6e8a6; font-size: 0.98rem; line-height: 1.15; }
+  .signal-text .signal-secondary { font-size: 0.74rem; color: #a9c2c8; margin-top: 2px; }
+  .signal-divider { width: 1px; align-self: stretch; background: rgba(255,255,255,0.12); }
+  .signal-status {
+    margin-left: auto;
+    font-size: 0.76rem;
+    font-weight: 750;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    color: #a9c2c8;
+    white-space: nowrap;
+  }
+  .signal-status.live { color: #7ee0a8; background: rgba(63,174,109,0.16); }
+  .signal-status.stale { color: #e8c07a; background: rgba(224,165,58,0.16); }
+  .signal-status.offline { color: #f0a0a0; background: rgba(192,57,43,0.18); }
+  .sig-g-zone { fill: none; stroke-width: 8; }
+  .sig-g-needle { stroke: #f4ecd8; stroke-width: 3; stroke-linecap: round; transition: all 0.5s cubic-bezier(.34,1.3,.5,1); }
+  .sig-g-hub { fill: #f4ecd8; }
+  .sig-b-on { fill: #4fc3d6; }
+  .sig-b-off { fill: #33474f; }
+  .signal-strip.dim .sig-g-zone { stroke: #4a5b62 !important; }
+  .signal-strip.dim .sig-g-needle { stroke: #6b7c83; }
+  .signal-strip.dim .sig-b-on { fill: #5a6f76; }
+
   .loading {
     position: fixed;
     inset: 0;
@@ -189,7 +231,6 @@
 <body>
   <nav class="rail" id="rail">
     <button class="active" data-id="home" title="Home"><img src="../assets/icons/icon-hub.svg" alt="" /></button>
-    <button data-id="signal" title="Venue Signal Health"><img src="../assets/icons/icon-signal.svg" alt="" /></button>
     <div class="sep"></div>
     <button data-id="attendance" title="Attendance"><img src="../assets/icons/icon-attendance.svg" alt="" /></button>
     <button data-id="barmenu" title="Bar Menu"><img src="../assets/icons/icon-barmenu.svg" alt="" /></button>
@@ -228,14 +269,26 @@
       </div>
     </div>
 
-    <div class="grid">
-      <div class="card">
-        <div class="card-head"><img src="../assets/icons/icon-signal.svg" alt="" /><b>Venue Signal Health</b></div>
-        <div class="card-links">
-          <button class="primary" data-id="signal">Open</button>
+    <section class="signal-strip" id="signal-strip">
+      <div class="signal-part">
+        <svg class="signal-gauge" id="sig-gauge" viewBox="0 0 120 74" aria-hidden="true"></svg>
+        <div class="signal-text">
+          <div class="signal-primary" id="sig-wifi-primary">Wi-Fi —</div>
+          <div class="signal-secondary" id="sig-wifi-secondary">venue PC</div>
         </div>
-        <p style="margin:0;color:var(--ink-faint);font-size:0.78rem;">Live Wi-Fi &amp; Bluetooth from the venue PC.</p>
       </div>
+      <div class="signal-divider"></div>
+      <div class="signal-part">
+        <svg class="signal-bars" id="sig-bars" viewBox="0 0 92 56" aria-hidden="true"></svg>
+        <div class="signal-text">
+          <div class="signal-primary" id="sig-bt-primary">Bluetooth —</div>
+          <div class="signal-secondary" id="sig-bt-secondary">&nbsp;</div>
+        </div>
+      </div>
+      <div class="signal-status" id="sig-status">Connecting…</div>
+    </section>
+
+    <div class="grid">
       <div class="card">
         <div class="card-head"><img src="../assets/icons/icon-attendance.svg" alt="" /><b>Attendance</b></div>
         <div class="card-links">
@@ -309,7 +362,7 @@
       </div>
     </div>
 
-    <div class="hint">Clicking a link loads its real, live page inside this window. The Signal Health tab shows live Wi-Fi &amp; Bluetooth from the venue PC. Video Jukebox opens as its own app. Window size, the last system you had open, and this app stay remembered between launches - closing the window just tucks it into the system tray.</div>
+    <div class="hint">Clicking a link loads its real, live page inside this window. Video Jukebox opens as its own app. Window size, the last system you had open, and this app stay remembered between launches - closing the window just tucks it into the system tray.</div>
   </main>
 
   <script>
@@ -418,6 +471,167 @@
     }
     loadWeather()
     setInterval(loadWeather, 15 * 60 * 1000)
+
+    // --- Live venue Wi-Fi / Bluetooth signal strip -------------------
+    const SIGNAL_URL = 'https://zzfcadiphconmkeudrby.supabase.co/functions/v1/venue-signal'
+    const SIGNAL_ANON = 'sb_publishable_IDOXZicxdptjL667yWpVAQ_H1jB2saj'
+    const SIG_FRESH_MS = 150000
+    const SIG_OFFLINE_MS = 15 * 60 * 1000
+
+    const NS = 'http://www.w3.org/2000/svg'
+    const G_CX = 60, G_CY = 62, G_R = 46
+
+    function gPolar(pct, r) {
+      const a = Math.PI - (Math.max(0, Math.min(100, pct)) / 100) * Math.PI
+      return [G_CX + r * Math.cos(a), G_CY - r * Math.sin(a)]
+    }
+    function gArc(p0, p1, r) {
+      const [x0, y0] = gPolar(p0, r), [x1, y1] = gPolar(p1, r)
+      return `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`
+    }
+    function el(tag, attrs) {
+      const n = document.createElementNS(NS, tag)
+      for (const k in attrs) n.setAttribute(k, attrs[k])
+      return n
+    }
+
+    function drawGauge(pct) {
+      const g = document.getElementById('sig-gauge')
+      g.innerHTML = ''
+      const zones = [[0, 30, '#c0392b'], [30, 55, '#e0a53a'], [55, 100, '#3fae6d']]
+      for (const [a, b, c] of zones) g.appendChild(el('path', { d: gArc(a, b, G_R), class: 'sig-g-zone', stroke: c }))
+      const v = pct == null ? 0 : pct
+      const [nx, ny] = gPolar(v, G_R - 10)
+      const [tx, ty] = gPolar(v, -6)
+      g.appendChild(el('line', { x1: tx, y1: ty, x2: nx, y2: ny, class: 'sig-g-needle' }))
+      g.appendChild(el('circle', { cx: G_CX, cy: G_CY, r: 5, class: 'sig-g-hub' }))
+    }
+
+    function rssiToBars(rssi) {
+      if (rssi == null) return 0
+      if (rssi >= -58) return 5
+      if (rssi >= -66) return 4
+      if (rssi >= -74) return 3
+      if (rssi >= -82) return 2
+      if (rssi >= -90) return 1
+      return 0
+    }
+
+    function drawBars(bars, powered) {
+      const s = document.getElementById('sig-bars')
+      s.innerHTML = ''
+      for (let i = 0; i < 5; i++) {
+        const h = 12 + i * 9
+        const on = bars != null ? i < bars : powered
+        s.appendChild(el('rect', { x: 2 + i * 12, y: 50 - h, width: 8, height: h, rx: 2, class: on ? 'sig-b-on' : 'sig-b-off' }))
+      }
+    }
+
+    function relAge(ms) {
+      const m = Math.round(ms / 60000)
+      if (m < 1) return 'just now'
+      if (m < 60) return m + ' min ago'
+      const h = Math.round(m / 60)
+      return h + (h === 1 ? ' hour ago' : ' hours ago')
+    }
+
+    function renderSignal(reading, serverTime) {
+      const strip = document.getElementById('signal-strip')
+      const statusEl = document.getElementById('sig-status')
+      const wp = document.getElementById('sig-wifi-primary')
+      const ws = document.getElementById('sig-wifi-secondary')
+      const bp = document.getElementById('sig-bt-primary')
+      const bs = document.getElementById('sig-bt-secondary')
+
+      if (!reading) {
+        strip.classList.add('dim')
+        statusEl.className = 'signal-status offline'
+        statusEl.textContent = 'No readings yet'
+        drawGauge(null); drawBars(null, false)
+        wp.textContent = 'Wi-Fi —'; ws.textContent = 'venue PC'
+        bp.textContent = 'Bluetooth —'; bs.innerHTML = '&nbsp;'
+        return
+      }
+
+      const now = serverTime ? new Date(serverTime).getTime() : Date.now()
+      const rec = reading.recorded_at ? new Date(reading.recorded_at).getTime() : null
+      const age = rec != null ? Math.max(0, now - rec) : null
+      const offline = age == null || age >= SIG_OFFLINE_MS
+      const stale = !offline && age > SIG_FRESH_MS
+      strip.classList.toggle('dim', offline || stale)
+
+      statusEl.className = 'signal-status ' + (offline ? 'offline' : stale ? 'stale' : 'live')
+      statusEl.textContent = offline
+        ? 'Venue PC offline'
+        : stale
+          ? 'Last seen ' + (age != null ? relAge(age) : 'a while ago')
+          : 'Live'
+
+      const show = !offline
+      // Wi-Fi
+      const sig = show ? reading.wifi_signal : null
+      drawGauge(sig)
+      if (show && reading.wifi_online) {
+        wp.textContent = 'Wi-Fi ' + (sig != null ? sig + '%' : '—')
+        const bits = [reading.wifi_ssid]
+        if (reading.wifi_signal_source === 'derived') {
+          if (reading.wifi_rate_mbps) bits.push(Math.round(reading.wifi_rate_mbps) + ' Mbps')
+          if (reading.net_latency_ms != null) bits.push(reading.net_latency_ms + ' ms')
+        } else if (reading.wifi_dbm != null) {
+          bits.push(reading.wifi_dbm + ' dBm')
+        }
+        ws.textContent = bits.filter(Boolean).join(' · ')
+      } else {
+        wp.textContent = 'Wi-Fi —'
+        ws.textContent = show ? 'not connected' : 'no reading'
+      }
+
+      // Bluetooth / sound system
+      const tName = reading.bt_target_name || null
+      const tConn = reading.bt_target_connected
+      const tRssi = reading.bt_target_rssi
+      const btBad = reading.bt_scan_error ? 'Bluetooth unavailable' : 'radio off'
+      if (tName) {
+        bp.textContent = 'Sound System'
+        if (show && tConn) {
+          drawBars(tRssi != null ? rssiToBars(tRssi) : null, true)
+          bs.textContent = (reading.bt_target_audio ? 'audio playing' : 'connected') + (tRssi != null ? ' · ' + tRssi + ' dBm' : '')
+        } else if (show && reading.bt_powered) {
+          drawBars(0, false)
+          bs.textContent = 'not connected'
+        } else {
+          drawBars(0, false)
+          bs.textContent = show ? btBad : 'no reading'
+        }
+      } else {
+        drawBars(null, show && reading.bt_powered)
+        const n = reading.bt_devices_seen
+        if (show && !reading.bt_powered) {
+          bp.textContent = 'Bluetooth'
+          bs.textContent = btBad
+        } else {
+          bp.textContent = 'Bluetooth ' + (show ? 'on' : '—')
+          bs.textContent = show && n != null ? n + ' nearby' : ' '
+        }
+      }
+    }
+
+    async function loadSignal() {
+      try {
+        const res = await fetch(SIGNAL_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SIGNAL_ANON, 'Authorization': 'Bearer ' + SIGNAL_ANON },
+          body: JSON.stringify({ action: 'latest', site: 'venue' }),
+        })
+        const data = await res.json()
+        if (data && data.ok) renderSignal(data.reading, data.serverTime)
+      } catch {
+        // leave whatever's on screen; the status pill will age into "offline"
+      }
+    }
+    drawGauge(null); drawBars(null, false)
+    loadSignal()
+    setInterval(loadSignal, 20000)
   </script>
 </body>
 </html>

@@ -13,11 +13,9 @@ const RAIL_WIDTH = 64
 // Every addressable page, keyed by a unique id - the rail opens the base
 // ids (hub, attendance, barmenu, ...); the home screen's cards
 // additionally link to every sub-page, all addressable through this map.
-// The "signal" entry loads the Hub's dedicated signal-health view (the
-// Shell's own home screen already covers the launcher grid).
+// The home screen shows the live venue Wi-Fi / Bluetooth signal strip
+// itself (renderer/index.html), so there's no signal system entry here.
 const SYSTEMS = {
-  signal: { label: 'Venue Signal Health', url: 'https://midwaysurfhub.vercel.app/?view=signal' },
-
   attendance: { label: 'Attendance Admin', url: 'https://midwaysurfregister.vercel.app/admin' },
   'attendance-kiosk': { label: 'Sign-In Kiosk', url: 'https://midwaysurfregister.vercel.app/' },
   'attendance-dashboard': { label: 'Dashboard', url: 'https://midwaysurfregister.vercel.app/dashboard' },
