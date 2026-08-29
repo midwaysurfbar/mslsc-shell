@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#173F4F"/>
+  <rect x="96" y="200" width="320" height="200" rx="28" fill="#F4A340"/>
+  <rect x="96" y="200" width="320" height="62" rx="28" fill="#FFC773"/>
+  <rect x="165" y="128" width="182" height="86" rx="16" fill="#0F2A35"/>
+  <circle cx="188" cy="366" r="26" fill="#173F4F"/>
+  <circle cx="324" cy="366" r="26" fill="#173F4F"/>
+  <rect x="228" y="285" width="56" height="56" rx="8" fill="#0F2A35" opacity=".35"/>
+  <text x="256" y="452" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="white">EVENT POS</text>
+</svg>
