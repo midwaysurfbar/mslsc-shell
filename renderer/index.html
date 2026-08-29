@@ -147,7 +147,7 @@
 
   /* Venue dashboard strip - always visible on the home screen. A live
      audio EQ (system-audio loopback, reacts to the Jukebox / iTunes /
-     anything playing) as the centrepiece, with the venue Wi-Fi and
+     anything playing) as the centrepiece, with the venue network and
      Bluetooth signal read-outs to the side (polled from the Hub's
      venue-signal function). */
   .signal-strip {
@@ -303,7 +303,7 @@
         <div class="signal-part">
           <svg class="signal-gauge" id="sig-gauge" viewBox="0 0 120 74" aria-hidden="true"></svg>
           <div class="signal-text">
-            <div class="signal-primary" id="sig-wifi-primary">Wi-Fi —</div>
+            <div class="signal-primary" id="sig-wifi-primary">Network —</div>
             <div class="signal-secondary" id="sig-wifi-secondary">venue PC</div>
           </div>
         </div>
@@ -396,7 +396,7 @@
       </div>
     </div>
 
-    <div class="hint">The strip up top shows the venue Wi-Fi / Bluetooth signal and a live audio meter (whatever is playing through the sound system). Clicking a link loads its real, live page inside this window. Video Jukebox opens as its own app. Window size, the last system you had open, and this app stay remembered between launches - closing the window just tucks it into the system tray.</div>
+    <div class="hint">The strip up top shows the venue network / Bluetooth signal and a live audio meter (whatever is playing through the sound system). Clicking a link loads its real, live page inside this window. Video Jukebox opens as its own app. Window size, the last system you had open, and this app stay remembered between launches - closing the window just tucks it into the system tray.</div>
   </main>
 
   <script>
@@ -506,7 +506,7 @@
     loadWeather()
     setInterval(loadWeather, 15 * 60 * 1000)
 
-    // --- Live venue Wi-Fi / Bluetooth signal strip -------------------
+    // --- Live venue network / Bluetooth signal strip -------------------
     const SIGNAL_URL = 'https://zzfcadiphconmkeudrby.supabase.co/functions/v1/venue-signal'
     const SIGNAL_ANON = 'sb_publishable_IDOXZicxdptjL667yWpVAQ_H1jB2saj'
     const SIG_FRESH_MS = 150000
@@ -582,7 +582,7 @@
         statusEl.className = 'signal-status offline'
         statusEl.textContent = 'No readings yet'
         drawGauge(null); drawBars(null, false)
-        wp.textContent = 'Wi-Fi —'; ws.textContent = 'venue PC'
+        wp.textContent = 'Network —'; ws.textContent = 'venue PC'
         bp.textContent = 'Bluetooth —'; bs.innerHTML = '&nbsp;'
         return
       }
@@ -602,21 +602,35 @@
           : 'Live'
 
       const show = !offline
-      // Wi-Fi
-      const sig = show ? reading.wifi_signal : null
+      // Connection (Wi-Fi or wired) - the venue PC moved to a wired
+      // connection 2026-08-30; connection_type (set by the agent) picks
+      // whichever is actually carrying traffic, so this falls back to a
+      // Wi-Fi reading on its own if it's ever wireless again.
+      const connType = reading.connection_type || (reading.wired_online ? 'wired' : reading.wifi_online ? 'wifi' : null)
+      const isWired = connType === 'wired'
+      const connLabel = isWired ? 'Ethernet' : 'Wi-Fi'
+      const sig = show ? (isWired ? reading.wired_signal : reading.wifi_signal) : null
+      const connOnline = isWired ? reading.wired_online : reading.wifi_online
       drawGauge(sig)
-      if (show && reading.wifi_online) {
-        wp.textContent = 'Wi-Fi ' + (sig != null ? sig + '%' : '—')
-        const bits = [reading.wifi_ssid]
-        if (reading.wifi_signal_source === 'derived') {
-          if (reading.wifi_rate_mbps) bits.push(Math.round(reading.wifi_rate_mbps) + ' Mbps')
-          if (reading.net_latency_ms != null) bits.push(reading.net_latency_ms + ' ms')
-        } else if (reading.wifi_dbm != null) {
-          bits.push(reading.wifi_dbm + ' dBm')
+      if (show && connOnline) {
+        wp.textContent = connLabel + ' ' + (sig != null ? sig + '%' : '—')
+        const bits = isWired
+          ? [
+              reading.wired_rate_mbps ? Math.round(reading.wired_rate_mbps) + ' Mbps' : null,
+              reading.net_latency_ms_wired != null ? reading.net_latency_ms_wired + ' ms' : null,
+            ]
+          : [reading.wifi_ssid]
+        if (!isWired) {
+          if (reading.wifi_signal_source === 'derived') {
+            if (reading.wifi_rate_mbps) bits.push(Math.round(reading.wifi_rate_mbps) + ' Mbps')
+            if (reading.net_latency_ms != null) bits.push(reading.net_latency_ms + ' ms')
+          } else if (reading.wifi_dbm != null) {
+            bits.push(reading.wifi_dbm + ' dBm')
+          }
         }
         ws.textContent = bits.filter(Boolean).join(' · ')
       } else {
-        wp.textContent = 'Wi-Fi —'
+        wp.textContent = connLabel + ' —'
         ws.textContent = show ? 'not connected' : 'no reading'
       }
 
