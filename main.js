@@ -1,4 +1,4 @@
-const { app, BaseWindow, WebContentsView, ipcMain, Menu, Tray, nativeImage, shell, dialog, session, desktopCapturer } = require('electron')
+const { app, BaseWindow, WebContentsView, ipcMain, Menu, Tray, nativeImage, shell, dialog, session, desktopCapturer, webContents } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const path = require('node:path')
 const fs = require('node:fs')
@@ -7,14 +7,28 @@ const fs = require('node:fs')
 // view, switched via a rail on the left, instead of a dozen browser
 // tabs. Every system's real, already-deployed URL is used as-is -
 // nothing about the systems themselves changes.
+//
+// The home screen embeds the real MSLSC Hub page (renderer/index.html's
+// <webview>) as the actual system launcher, rather than a second
+// hand-maintained copy of its card grid - the Hub is the one source of
+// truth for "every MSLSC system" now. See HUB_URL / the
+// register-hub-webcontents handler below.
 
 const RAIL_WIDTH = 64
+// The home screen's <webview> loads this - the Hub is the actual source
+// of truth for "every MSLSC system" now, not this file's SYSTEMS map.
+const HUB_URL = 'https://midwaysurfhub.vercel.app/'
+const HUB_ORIGIN = new URL(HUB_URL).origin
 
-// Every addressable page, keyed by a unique id - the rail opens the base
-// ids (hub, attendance, barmenu, ...); the home screen's cards
-// additionally link to every sub-page, all addressable through this map.
-// The home screen shows the live venue Wi-Fi / Bluetooth signal strip
-// itself (renderer/index.html), so there's no signal system entry here.
+// Every page the rail's own quick-launch icons open, keyed by a short id.
+// This is NOT the source of truth for "every MSLSC system" any more - the
+// home screen embeds the real, live Hub page (renderer/index.html), which
+// is where a newly-built app actually needs adding (its own systemsFor()
+// in MSLSC Hub/src/App.jsx) to show up here with zero changes to this
+// file. This map only needs new entries for a system that should ALSO
+// get its own rail shortcut - a nice-to-have, not a requirement.
+// showSystem() below accepts a raw URL too (not just a key from this
+// map) - that's how a link clicked inside the embedded Hub page opens.
 const SYSTEMS = {
   attendance: { label: 'Attendance Admin', url: 'https://midwaysurfregister.vercel.app/admin' },
   'attendance-kiosk': { label: 'Sign-In Kiosk', url: 'https://midwaysurfregister.vercel.app/' },
@@ -183,16 +197,31 @@ function revealSystemView(id, view) {
   view.setBounds(contentBounds())
 }
 
-function showSystem(id) {
-  const system = SYSTEMS[id]
-  if (!system) return
+function labelForUrl(url) {
+  try { return new URL(url).hostname.replace(/^www\./, '') } catch { return 'that page' }
+}
 
-  activeSystemId = id
-  saveState({ lastSystemId: id })
+// `idOrUrl` is either one of SYSTEMS' short ids (rail icons, the old
+// hand-maintained list) or a raw URL - the latter is how a link clicked
+// inside the embedded Hub page on the home screen gets opened, so a new
+// app added to the Hub just works here with zero edits to this file.
+// Either way it's used as-is as the systemViews cache key, so revisiting
+// the same URL twice still gets the instant-switch caching benefit.
+function showSystem(idOrUrl, adhocLabel) {
+  const known = SYSTEMS[idOrUrl]
+  const key = idOrUrl
+  const url = known ? known.url : idOrUrl
+  const label = known ? known.label : (adhocLabel || labelForUrl(idOrUrl))
 
-  if (loadedSystemIds.has(id)) {
+  activeSystemId = key
+  // Only a known short id is safe to silently reopen on next launch -
+  // an ad-hoc URL's label wouldn't survive a restart, so it'd show a
+  // loading spinner with no context if restored blind.
+  if (known) saveState({ lastSystemId: key })
+
+  if (loadedSystemIds.has(key)) {
     // Already loaded before - switch instantly, no loading state.
-    revealSystemView(id, systemViews.get(id))
+    revealSystemView(key, systemViews.get(key))
     return
   }
 
@@ -200,30 +229,30 @@ function showSystem(id) {
   // showing a loading state, and only reveal the real view once it's
   // actually ready - avoids a blank white flash while the real page loads.
   homeView.setBounds({ x: 0, y: 0, ...mainWindowFullSize() })
-  homeView.webContents.send('loading-state', { show: true, label: system.label })
+  homeView.webContents.send('loading-state', { show: true, label })
 
-  let view = systemViews.get(id)
+  let view = systemViews.get(key)
   if (!view) {
     view = new WebContentsView({
       webPreferences: { contextIsolation: true, sandbox: true },
     })
     mainWindow.contentView.addChildView(view)
     view.setBounds({ x: 0, y: 0, width: 0, height: 0 })
-    systemViews.set(id, view)
+    systemViews.set(key, view)
 
     view.webContents.on('did-finish-load', () => {
-      loadedSystemIds.add(id)
-      revealSystemView(id, view)
+      loadedSystemIds.add(key)
+      revealSystemView(key, view)
     })
 
     view.webContents.on('did-fail-load', (_event, errorCode) => {
       if (errorCode === -3) return // ERR_ABORTED - a normal in-page navigation, not a real failure
-      if (activeSystemId !== id) return
-      homeView.webContents.send('loading-state', { show: true, label: system.label, error: true })
+      if (activeSystemId !== key) return
+      homeView.webContents.send('loading-state', { show: true, label, error: true })
     })
   }
 
-  view.webContents.loadURL(system.url)
+  view.webContents.loadURL(url)
 }
 
 function createWindow() {
@@ -244,6 +273,10 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       sandbox: false,
+      // The home screen embeds the live Hub page (see renderer/index.html)
+      // instead of hand-duplicating its system list - webviewTag needs
+      // sandbox:false, already set above for the audio-loopback capture.
+      webviewTag: true,
     },
   })
   mainWindow.contentView.addChildView(homeView)
@@ -295,12 +328,36 @@ function createWindow() {
     else showSystem(id)
   })
 
+  // A link clicked inside the embedded Hub page on the home screen -
+  // see the will-navigate handler in renderer/index.html.
+  ipcMain.on('open-url', (_event, url, label) => showSystem(url, label))
+
+  // The <webview>'s OWN will-navigate (fired on its DOM element) can't
+  // be cancelled - Electron only honours preventDefault() on a real
+  // WebContents' will-navigate. So the renderer hands over the guest's
+  // webContents id once it's ready, and this hooks the real event here:
+  // any link to a different origin opens as a proper system view in
+  // this window instead of navigating the little embedded Hub away.
+  ipcMain.on('register-hub-webcontents', (_event, id) => {
+    const guest = webContents.fromId(id)
+    if (!guest) return
+    guest.on('will-navigate', (navEvent, url) => {
+      let origin = null
+      try { origin = new URL(url).origin } catch { return }
+      if (origin === HUB_ORIGIN) return
+      navEvent.preventDefault()
+      showSystem(url)
+    })
+  })
+
   ipcMain.on('retry-system', (_event, id) => {
-    const system = SYSTEMS[id]
+    const known = SYSTEMS[id]
     const view = systemViews.get(id)
-    if (!system || !view || activeSystemId !== id) return
-    homeView.webContents.send('loading-state', { show: true, label: system.label })
-    view.webContents.loadURL(system.url)
+    if (!view || activeSystemId !== id) return
+    const url = known ? known.url : id
+    const label = known ? known.label : labelForUrl(id)
+    homeView.webContents.send('loading-state', { show: true, label })
+    view.webContents.loadURL(url)
   })
 }
 
