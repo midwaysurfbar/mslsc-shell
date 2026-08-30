@@ -107,6 +107,7 @@
   .signal-part { display: flex; align-items: center; gap: 10px; }
   .signal-gauge { width: 70px; height: auto; flex: 0 0 auto; }
   .signal-bars { width: 48px; height: auto; flex: 0 0 auto; }
+  .signal-lamp { width: 34px; height: auto; flex: 0 0 auto; }
   .signal-text { min-width: 0; }
   .signal-text .signal-primary { font-weight: 800; color: #f6e8a6; font-size: 0.92rem; line-height: 1.15; }
   .signal-text .signal-secondary { font-size: 0.72rem; color: #a9c2c8; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -140,9 +141,15 @@
   .sig-g-hub { fill: #f4ecd8; }
   .sig-b-on { fill: #4fc3d6; }
   .sig-b-off { fill: #33474f; }
+  .sig-lamp-ring { fill: none; stroke: #0e1c22; stroke-width: 3; }
+  .sig-lamp-core { stroke: #0e1c22; stroke-width: 1; transition: fill 0.3s ease; }
+  .sig-lamp-core.high { fill: #3fae6d; }
+  .sig-lamp-core.mid { fill: #e0a53a; }
+  .sig-lamp-core.low, .sig-lamp-core.off { fill: #c0392b; }
   .signal-strip.dim .sig-g-zone { stroke: #4a5b62 !important; }
   .signal-strip.dim .sig-g-needle { stroke: #6b7c83; }
   .signal-strip.dim .sig-b-on { fill: #5a6f76; }
+  .signal-strip.dim .sig-lamp-core { fill: #4a5b62 !important; }
 
   @media (max-width: 720px) {
     .signal-strip { flex-wrap: wrap; }
@@ -224,6 +231,13 @@
           <div class="signal-text">
             <div class="signal-primary" id="sig-wifi-primary">Network —</div>
             <div class="signal-secondary" id="sig-wifi-secondary">venue PC</div>
+          </div>
+        </div>
+        <div class="signal-part">
+          <svg class="signal-lamp" id="sig-lamp" viewBox="0 0 40 40" aria-hidden="true"></svg>
+          <div class="signal-text">
+            <div class="signal-primary" id="sig-net-primary">Internet —</div>
+            <div class="signal-secondary" id="sig-net-secondary">&nbsp;</div>
           </div>
         </div>
         <div class="signal-part">
@@ -377,6 +391,14 @@
       }
     }
 
+    function drawLamp(online, pct) {
+      const l = document.getElementById('sig-lamp')
+      l.innerHTML = ''
+      const tier = !online ? 'off' : pct >= 70 ? 'high' : pct >= 30 ? 'mid' : 'low'
+      l.appendChild(el('circle', { cx: 20, cy: 20, r: 16, class: 'sig-lamp-ring' }))
+      l.appendChild(el('circle', { cx: 20, cy: 20, r: 11, class: 'sig-lamp-core ' + tier }))
+    }
+
     function relAge(ms) {
       const m = Math.round(ms / 60000)
       if (m < 1) return 'just now'
@@ -390,6 +412,8 @@
       const statusEl = document.getElementById('sig-status')
       const wp = document.getElementById('sig-wifi-primary')
       const ws = document.getElementById('sig-wifi-secondary')
+      const np = document.getElementById('sig-net-primary')
+      const ns = document.getElementById('sig-net-secondary')
       const bp = document.getElementById('sig-bt-primary')
       const bs = document.getElementById('sig-bt-secondary')
 
@@ -397,8 +421,9 @@
         strip.classList.add('dim')
         statusEl.className = 'signal-status offline'
         statusEl.textContent = 'No readings yet'
-        drawGauge(null); drawBars(null, false)
+        drawGauge(null); drawLamp(false, 0); drawBars(null, false)
         wp.textContent = 'Network —'; ws.textContent = 'venue PC'
+        np.textContent = 'Internet —'; ns.innerHTML = '&nbsp;'
         bp.textContent = 'Bluetooth —'; bs.innerHTML = '&nbsp;'
         return
       }
@@ -450,6 +475,27 @@
         ws.textContent = show ? 'not connected' : 'no reading'
       }
 
+      // Internet - a real end-to-end reachability check (pings an
+      // actual internet host), independent of the local wired/Wi-Fi hop
+      // above. Catches a degraded Wi-Fi extender/mesh backhaul that the
+      // local-hop reading alone can't see (it can show 100% while the
+      // extender's own wireless link back to the router is struggling).
+      const netOnline = show && reading.internet_online
+      const netPct = reading.internet_signal || 0
+      drawLamp(netOnline, netPct)
+      if (show) {
+        np.textContent = 'Internet ' + (reading.internet_online ? netPct + '%' : 'offline')
+        ns.textContent = reading.internet_online
+          ? [
+              reading.internet_latency_ms != null ? reading.internet_latency_ms + ' ms' : null,
+              reading.internet_loss_pct ? reading.internet_loss_pct + '% loss' : null,
+            ].filter(Boolean).join(' · ')
+          : 'no response'
+      } else {
+        np.textContent = 'Internet —'
+        ns.textContent = 'no reading'
+      }
+
       // Bluetooth / sound system
       const tName = reading.bt_target_name || null
       const tConn = reading.bt_target_connected
@@ -493,7 +539,7 @@
         // leave whatever's on screen; the status pill will age into "offline"
       }
     }
-    drawGauge(null); drawBars(null, false)
+    drawGauge(null); drawLamp(false, 0); drawBars(null, false)
     loadSignal()
     setInterval(loadSignal, 20000)
 
