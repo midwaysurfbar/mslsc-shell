@@ -2,7 +2,7 @@
   "name": "mslsc-shell",
   "productName": "MSLSC",
   "private": true,
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "A desktop shell that loads the live MSLSC systems inside one window instead of a dozen browser tabs.",
   "author": "Midway Surf Lifesaving Club",
   "main": "main.js",

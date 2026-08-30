@@ -79,11 +79,10 @@
     background: #fff;
   }
 
-  /* Venue dashboard strip - always visible on the home screen. A live
-     audio EQ (system-audio loopback, reacts to the Jukebox / iTunes /
-     anything playing) as the centrepiece, with the venue network and
-     Bluetooth signal read-outs to the side (polled from the Hub's
-     venue-signal function). */
+  /* Live audio EQ panel (system-audio loopback, reacts to the Jukebox
+     / iTunes / anything playing). Network/Bluetooth/Internet status
+     used to live here too, natively duplicated - that's now shown
+     once, by the embedded Hub page's own Venue Signal Health card. */
   .signal-strip {
     display: flex;
     align-items: stretch;
@@ -96,22 +95,6 @@
     box-shadow: inset 0 2px 10px rgba(0,0,0,0.37), 0 4px 12px rgba(23,63,79,0.12);
     min-height: 128px;
   }
-  .signal-side {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 10px;
-    flex: 0 0 auto;
-    width: 210px;
-  }
-  .signal-part { display: flex; align-items: center; gap: 10px; }
-  .signal-gauge { width: 70px; height: auto; flex: 0 0 auto; }
-  .signal-bars { width: 48px; height: auto; flex: 0 0 auto; }
-  .signal-lamp { width: 34px; height: auto; flex: 0 0 auto; }
-  .signal-text { min-width: 0; }
-  .signal-text .signal-primary { font-weight: 800; color: #f6e8a6; font-size: 0.92rem; line-height: 1.15; }
-  .signal-text .signal-secondary { font-size: 0.72rem; color: #a9c2c8; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
   .signal-eq { flex: 1 1 auto; min-width: 0; position: relative; align-self: stretch; }
   #eq-canvas { width: 100%; height: 100%; display: block; }
   .eq-idle {
@@ -121,41 +104,6 @@
     pointer-events: none;
   }
   .eq-idle.hidden { display: none; }
-
-  .signal-status {
-    align-self: center;
-    font-size: 0.76rem;
-    font-weight: 750;
-    padding: 5px 12px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.08);
-    color: #a9c2c8;
-    white-space: nowrap;
-    flex: 0 0 auto;
-  }
-  .signal-status.live { color: #7ee0a8; background: rgba(63,174,109,0.16); }
-  .signal-status.stale { color: #e8c07a; background: rgba(224,165,58,0.16); }
-  .signal-status.offline { color: #f0a0a0; background: rgba(192,57,43,0.18); }
-  .sig-g-zone { fill: none; stroke-width: 8; }
-  .sig-g-needle { stroke: #f4ecd8; stroke-width: 3; stroke-linecap: round; transition: all 0.5s cubic-bezier(.34,1.3,.5,1); }
-  .sig-g-hub { fill: #f4ecd8; }
-  .sig-b-on { fill: #4fc3d6; }
-  .sig-b-off { fill: #33474f; }
-  .sig-lamp-ring { fill: none; stroke: #0e1c22; stroke-width: 3; }
-  .sig-lamp-core { stroke: #0e1c22; stroke-width: 1; transition: fill 0.3s ease; }
-  .sig-lamp-core.high { fill: #3fae6d; }
-  .sig-lamp-core.mid { fill: #e0a53a; }
-  .sig-lamp-core.low, .sig-lamp-core.off { fill: #c0392b; }
-  .signal-strip.dim .sig-g-zone { stroke: #4a5b62 !important; }
-  .signal-strip.dim .sig-g-needle { stroke: #6b7c83; }
-  .signal-strip.dim .sig-b-on { fill: #5a6f76; }
-  .signal-strip.dim .sig-lamp-core { fill: #4a5b62 !important; }
-
-  @media (max-width: 720px) {
-    .signal-strip { flex-wrap: wrap; }
-    .signal-side { width: auto; flex-direction: row; }
-    .signal-eq { flex-basis: 100%; min-height: 90px; }
-  }
 
   .loading {
     position: fixed;
@@ -225,34 +173,10 @@
 
   <main class="home" id="home">
     <section class="signal-strip" id="signal-strip">
-      <div class="signal-side">
-        <div class="signal-part">
-          <svg class="signal-gauge" id="sig-gauge" viewBox="0 0 120 74" aria-hidden="true"></svg>
-          <div class="signal-text">
-            <div class="signal-primary" id="sig-wifi-primary">Network —</div>
-            <div class="signal-secondary" id="sig-wifi-secondary">venue PC</div>
-          </div>
-        </div>
-        <div class="signal-part">
-          <svg class="signal-lamp" id="sig-lamp" viewBox="0 0 40 40" aria-hidden="true"></svg>
-          <div class="signal-text">
-            <div class="signal-primary" id="sig-net-primary">Internet —</div>
-            <div class="signal-secondary" id="sig-net-secondary">&nbsp;</div>
-          </div>
-        </div>
-        <div class="signal-part">
-          <svg class="signal-bars" id="sig-bars" viewBox="0 0 92 56" aria-hidden="true"></svg>
-          <div class="signal-text">
-            <div class="signal-primary" id="sig-bt-primary">Bluetooth —</div>
-            <div class="signal-secondary" id="sig-bt-secondary">&nbsp;</div>
-          </div>
-        </div>
-      </div>
       <div class="signal-eq">
         <canvas id="eq-canvas" width="1000" height="128"></canvas>
         <div class="eq-idle" id="eq-idle">no audio playing</div>
       </div>
-      <div class="signal-status" id="sig-status">Connecting…</div>
     </section>
 
     <!-- The Hub IS the command centre - this embeds its real, live page
@@ -335,213 +259,6 @@
     hubView.addEventListener('dom-ready', () => {
       window.mslsc.registerHubWebContents(hubView.getWebContentsId())
     }, { once: true })
-
-    // --- Live venue network / Bluetooth signal strip -------------------
-    const SIGNAL_URL = 'https://zzfcadiphconmkeudrby.supabase.co/functions/v1/venue-signal'
-    const SIGNAL_ANON = 'sb_publishable_IDOXZicxdptjL667yWpVAQ_H1jB2saj'
-    const SIG_FRESH_MS = 150000
-    const SIG_OFFLINE_MS = 15 * 60 * 1000
-
-    const NS = 'http://www.w3.org/2000/svg'
-    const G_CX = 60, G_CY = 62, G_R = 46
-
-    function gPolar(pct, r) {
-      const a = Math.PI - (Math.max(0, Math.min(100, pct)) / 100) * Math.PI
-      return [G_CX + r * Math.cos(a), G_CY - r * Math.sin(a)]
-    }
-    function gArc(p0, p1, r) {
-      const [x0, y0] = gPolar(p0, r), [x1, y1] = gPolar(p1, r)
-      return `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`
-    }
-    function el(tag, attrs) {
-      const n = document.createElementNS(NS, tag)
-      for (const k in attrs) n.setAttribute(k, attrs[k])
-      return n
-    }
-
-    function drawGauge(pct) {
-      const g = document.getElementById('sig-gauge')
-      g.innerHTML = ''
-      const zones = [[0, 30, '#c0392b'], [30, 55, '#e0a53a'], [55, 100, '#3fae6d']]
-      for (const [a, b, c] of zones) g.appendChild(el('path', { d: gArc(a, b, G_R), class: 'sig-g-zone', stroke: c }))
-      const v = pct == null ? 0 : pct
-      const [nx, ny] = gPolar(v, G_R - 10)
-      const [tx, ty] = gPolar(v, -6)
-      g.appendChild(el('line', { x1: tx, y1: ty, x2: nx, y2: ny, class: 'sig-g-needle' }))
-      g.appendChild(el('circle', { cx: G_CX, cy: G_CY, r: 5, class: 'sig-g-hub' }))
-    }
-
-    function rssiToBars(rssi) {
-      if (rssi == null) return 0
-      if (rssi >= -58) return 5
-      if (rssi >= -66) return 4
-      if (rssi >= -74) return 3
-      if (rssi >= -82) return 2
-      if (rssi >= -90) return 1
-      return 0
-    }
-
-    function drawBars(bars, powered) {
-      const s = document.getElementById('sig-bars')
-      s.innerHTML = ''
-      for (let i = 0; i < 5; i++) {
-        const h = 12 + i * 9
-        const on = bars != null ? i < bars : powered
-        s.appendChild(el('rect', { x: 2 + i * 12, y: 50 - h, width: 8, height: h, rx: 2, class: on ? 'sig-b-on' : 'sig-b-off' }))
-      }
-    }
-
-    function drawLamp(online, pct) {
-      const l = document.getElementById('sig-lamp')
-      l.innerHTML = ''
-      const tier = !online ? 'off' : pct >= 70 ? 'high' : pct >= 30 ? 'mid' : 'low'
-      l.appendChild(el('circle', { cx: 20, cy: 20, r: 16, class: 'sig-lamp-ring' }))
-      l.appendChild(el('circle', { cx: 20, cy: 20, r: 11, class: 'sig-lamp-core ' + tier }))
-    }
-
-    function relAge(ms) {
-      const m = Math.round(ms / 60000)
-      if (m < 1) return 'just now'
-      if (m < 60) return m + ' min ago'
-      const h = Math.round(m / 60)
-      return h + (h === 1 ? ' hour ago' : ' hours ago')
-    }
-
-    function renderSignal(reading, serverTime) {
-      const strip = document.getElementById('signal-strip')
-      const statusEl = document.getElementById('sig-status')
-      const wp = document.getElementById('sig-wifi-primary')
-      const ws = document.getElementById('sig-wifi-secondary')
-      const np = document.getElementById('sig-net-primary')
-      const ns = document.getElementById('sig-net-secondary')
-      const bp = document.getElementById('sig-bt-primary')
-      const bs = document.getElementById('sig-bt-secondary')
-
-      if (!reading) {
-        strip.classList.add('dim')
-        statusEl.className = 'signal-status offline'
-        statusEl.textContent = 'No readings yet'
-        drawGauge(null); drawLamp(false, 0); drawBars(null, false)
-        wp.textContent = 'Network —'; ws.textContent = 'venue PC'
-        np.textContent = 'Internet —'; ns.innerHTML = '&nbsp;'
-        bp.textContent = 'Bluetooth —'; bs.innerHTML = '&nbsp;'
-        return
-      }
-
-      const now = serverTime ? new Date(serverTime).getTime() : Date.now()
-      const rec = reading.recorded_at ? new Date(reading.recorded_at).getTime() : null
-      const age = rec != null ? Math.max(0, now - rec) : null
-      const offline = age == null || age >= SIG_OFFLINE_MS
-      const stale = !offline && age > SIG_FRESH_MS
-      strip.classList.toggle('dim', offline || stale)
-
-      statusEl.className = 'signal-status ' + (offline ? 'offline' : stale ? 'stale' : 'live')
-      statusEl.textContent = offline
-        ? 'Venue PC offline'
-        : stale
-          ? 'Last seen ' + (age != null ? relAge(age) : 'a while ago')
-          : 'Live'
-
-      const show = !offline
-      // Connection (Wi-Fi or wired) - the venue PC moved to a wired
-      // connection 2026-08-30; connection_type (set by the agent) picks
-      // whichever is actually carrying traffic, so this falls back to a
-      // Wi-Fi reading on its own if it's ever wireless again.
-      const connType = reading.connection_type || (reading.wired_online ? 'wired' : reading.wifi_online ? 'wifi' : null)
-      const isWired = connType === 'wired'
-      const connLabel = isWired ? 'Ethernet' : 'Wi-Fi'
-      const sig = show ? (isWired ? reading.wired_signal : reading.wifi_signal) : null
-      const connOnline = isWired ? reading.wired_online : reading.wifi_online
-      drawGauge(sig)
-      if (show && connOnline) {
-        wp.textContent = connLabel + ' ' + (sig != null ? sig + '%' : '—')
-        const bits = isWired
-          ? [
-              reading.wired_rate_mbps ? Math.round(reading.wired_rate_mbps) + ' Mbps' : null,
-              reading.net_latency_ms_wired != null ? reading.net_latency_ms_wired + ' ms' : null,
-            ]
-          : [reading.wifi_ssid]
-        if (!isWired) {
-          if (reading.wifi_signal_source === 'derived') {
-            if (reading.wifi_rate_mbps) bits.push(Math.round(reading.wifi_rate_mbps) + ' Mbps')
-            if (reading.net_latency_ms != null) bits.push(reading.net_latency_ms + ' ms')
-          } else if (reading.wifi_dbm != null) {
-            bits.push(reading.wifi_dbm + ' dBm')
-          }
-        }
-        ws.textContent = bits.filter(Boolean).join(' · ')
-      } else {
-        wp.textContent = connLabel + ' —'
-        ws.textContent = show ? 'not connected' : 'no reading'
-      }
-
-      // Internet - a real end-to-end reachability check (pings an
-      // actual internet host), independent of the local wired/Wi-Fi hop
-      // above. Catches a degraded Wi-Fi extender/mesh backhaul that the
-      // local-hop reading alone can't see (it can show 100% while the
-      // extender's own wireless link back to the router is struggling).
-      const netOnline = show && reading.internet_online
-      const netPct = reading.internet_signal || 0
-      drawLamp(netOnline, netPct)
-      if (show) {
-        np.textContent = 'Internet ' + (reading.internet_online ? netPct + '%' : 'offline')
-        ns.textContent = reading.internet_online
-          ? [
-              reading.internet_latency_ms != null ? reading.internet_latency_ms + ' ms' : null,
-              reading.internet_loss_pct ? reading.internet_loss_pct + '% loss' : null,
-            ].filter(Boolean).join(' · ')
-          : 'no response'
-      } else {
-        np.textContent = 'Internet —'
-        ns.textContent = 'no reading'
-      }
-
-      // Bluetooth / sound system
-      const tName = reading.bt_target_name || null
-      const tConn = reading.bt_target_connected
-      const tRssi = reading.bt_target_rssi
-      const btBad = reading.bt_scan_error ? 'Bluetooth unavailable' : 'radio off'
-      if (tName) {
-        bp.textContent = 'Sound System'
-        if (show && tConn) {
-          drawBars(tRssi != null ? rssiToBars(tRssi) : null, true)
-          bs.textContent = (reading.bt_target_audio ? 'audio playing' : 'connected') + (tRssi != null ? ' · ' + tRssi + ' dBm' : '')
-        } else if (show && reading.bt_powered) {
-          drawBars(0, false)
-          bs.textContent = 'not connected'
-        } else {
-          drawBars(0, false)
-          bs.textContent = show ? btBad : 'no reading'
-        }
-      } else {
-        drawBars(null, show && reading.bt_powered)
-        const n = reading.bt_devices_seen
-        if (show && !reading.bt_powered) {
-          bp.textContent = 'Bluetooth'
-          bs.textContent = btBad
-        } else {
-          bp.textContent = 'Bluetooth ' + (show ? 'on' : '—')
-          bs.textContent = show && n != null ? n + ' nearby' : ' '
-        }
-      }
-    }
-
-    async function loadSignal() {
-      try {
-        const res = await fetch(SIGNAL_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'apikey': SIGNAL_ANON, 'Authorization': 'Bearer ' + SIGNAL_ANON },
-          body: JSON.stringify({ action: 'latest', site: 'venue' }),
-        })
-        const data = await res.json()
-        if (data && data.ok) renderSignal(data.reading, data.serverTime)
-      } catch {
-        // leave whatever's on screen; the status pill will age into "offline"
-      }
-    }
-    drawGauge(null); drawLamp(false, 0); drawBars(null, false)
-    loadSignal()
-    setInterval(loadSignal, 20000)
 
     // --- Live audio EQ (system-audio loopback) ---------------------
     // Captures the PC's audio output mix - reacts to whatever is
