@@ -260,6 +260,24 @@
       window.mslsc.registerHubWebContents(hubView.getWebContentsId())
     }, { once: true })
 
+    // Every card on the Hub opens its link with target="_blank" (so a
+    // plain browser tab gets a real new tab) - inside a <webview> that
+    // doesn't navigate the guest at all, it fires 'new-window' instead
+    // of 'will-navigate', which nothing here was listening for. With no
+    // handler, Electron's default for an unhandled webview new-window
+    // request is to do nothing at all - not open a window, not error,
+    // just silently drop the click. That's the "Dashboard button does
+    // nothing" bug (2026-09-02) - and every other Hub link had the exact
+    // same problem, not just Dashboard, since they're all target="_blank".
+    // Unlike will-navigate, new-window IS directly listenable (and
+    // preventable) on the <webview> element itself, no main-process
+    // relay needed - routes through the same openUrl/showSystem path
+    // will-navigate already uses, so it opens as a proper view in this
+    // window exactly the same way.
+    hubView.addEventListener('new-window', (event) => {
+      window.mslsc.openUrl(event.url)
+    })
+
     // --- Live audio EQ (system-audio loopback) ---------------------
     // Captures the PC's audio output mix - reacts to whatever is
     // playing (the Video Jukebox, iTunes, a browser tab, anything).
