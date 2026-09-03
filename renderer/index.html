@@ -186,8 +186,16 @@
          proper view in this window (see the will-navigate handler
          below) instead of navigating this little embedded page away.
          Video Jukebox has no web page (desktop-only app) so it isn't on
-         the Hub and keeps its own rail icon as the only way to launch it. -->
-    <webview id="hub-view" src="https://midwaysurfhub.vercel.app/"></webview>
+         the Hub and keeps its own rail icon as the only way to launch it.
+
+         allowpopups is required - every Hub card link uses
+         target="_blank", and without this attribute a <webview> blocks
+         that at the Chromium level before it ever reaches JS: no
+         'new-window' event fires, no error, the click just does
+         nothing. Found the hard way (2026-09-03) - a 'new-window'
+         listener alone (added the day before) had zero effect until
+         this was added too. -->
+    <webview id="hub-view" src="https://midwaysurfhub.vercel.app/" allowpopups></webview>
   </main>
 
   <script>
