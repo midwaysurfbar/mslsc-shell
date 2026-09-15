@@ -62,11 +62,6 @@ const SYSTEMS = {
   'raffle-board': { label: 'Board', url: 'https://midwaysurfraffle.vercel.app/board' },
   'raffle-fundraiser': { label: 'Fundraiser', url: 'https://midwaysurfraffle.vercel.app/fundraiser' },
 
-  eventpos: { label: 'Event POS', url: 'https://midwaysurfeventpos.vercel.app/' },
-  'eventpos-report': { label: 'Report', url: 'https://midwaysurfeventpos.vercel.app/report' },
-  'eventpos-history': { label: 'History', url: 'https://midwaysurfeventpos.vercel.app/history' },
-  'eventpos-float': { label: 'Cash Float', url: 'https://midwaysurfeventpos.vercel.app/float' },
-
   preorder: { label: 'Meal Pre-Order', url: 'https://midwaysurfpreorder.vercel.app/' },
   'preorder-admin': { label: 'Admin', url: 'https://midwaysurfpreorder.vercel.app/admin' },
 }
