@@ -40,7 +40,8 @@ const SYSTEMS = {
   barmenu: { label: 'Bar Menu Admin', url: 'https://midwaysurfbarmenu.vercel.app/admin' },
   'barmenu-board': { label: 'Menu Board', url: 'https://midwaysurfbarmenu.vercel.app/' },
 
-  barinventory: { label: 'Bar Inventory', url: 'https://midwaysurfbarinventory.vercel.app/' },
+  // Replaces the separate Bar Inventory and Food Cost Builder apps (2026-09-21).
+  menustock: { label: 'Menu & Stock Manager', url: 'https://mslscmenustockmanager.vercel.app/' },
 
   barbooking: { label: 'Bar Booking Admin', url: 'https://midwaysurfbarbookings.vercel.app/admin' },
   'barbooking-login': { label: 'Open / Login', url: 'https://midwaysurfbarbookings.vercel.app/' },
@@ -52,8 +53,6 @@ const SYSTEMS = {
   'nippers-children': { label: 'Children', url: 'https://midwaysurfnippers.vercel.app/children' },
   'nippers-agegroups': { label: 'Age Groups', url: 'https://midwaysurfnippers.vercel.app/age-groups' },
   'nippers-report': { label: 'Nippers Report', url: 'https://midwaysurfnippers.vercel.app/report' },
-
-  foodcost: { label: 'Food Cost Builder', url: 'https://midwaysurffoodcost.vercel.app/' },
 
   auction: { label: 'Auction Admin', url: 'https://midwaysurfauction.vercel.app/admin' },
   'auction-board': { label: 'Board', url: 'https://midwaysurfauction.vercel.app/board' },
