@@ -37,8 +37,10 @@ const SYSTEMS = {
   'attendance-dutysummary': { label: 'Duty Summary', url: 'https://midwaysurfregister.vercel.app/duty-summary' },
   'attendance-mobilemembers': { label: 'Mobile Members', url: 'https://midwaysurfregister.vercel.app/mobile-members' },
 
-  barmenu: { label: 'Bar Menu Admin', url: 'https://midwaysurfbarmenu.vercel.app/admin' },
-  'barmenu-board': { label: 'Menu Board', url: 'https://midwaysurfbarmenu.vercel.app/' },
+  // Bar Menu moved into Menu & Stock Manager (2026-09-23/24): board is its
+  // public /board route, admin is its Bar Menu Admin tab via ?tab=.
+  barmenu: { label: 'Bar Menu Admin', url: 'https://mslscmenustockmanager.vercel.app/?tab=barmenu-admin' },
+  'barmenu-board': { label: 'Menu Board', url: 'https://mslscmenustockmanager.vercel.app/board' },
 
   // Replaces the separate Bar Inventory and Food Cost Builder apps (2026-09-21).
   menustock: { label: 'Menu & Stock Manager', url: 'https://mslscmenustockmanager.vercel.app/' },
