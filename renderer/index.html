@@ -346,10 +346,31 @@
       eqIdle.classList.toggle('hidden', !eqAnalyser || eqSilentFrames < 60)
     }
 
+    // Linux (Mint, 2026-10-07): Windows-style "loopback" capture of the
+    // speaker output doesn't exist there. Instead PulseAudio/PipeWire
+    // offer a "Monitor of <speakers>" input, which carries exactly what's
+    // playing - so listen to that. Never falls back to a microphone: no
+    // monitor found means "audio meter unavailable", not room noise.
+    async function linuxMonitorStream() {
+      const warm = await navigator.mediaDevices.getUserMedia({ audio: true })
+      warm.getTracks().forEach((t) => t.stop())
+      const inputs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput')
+      const monitor = inputs.find((d) => /monitor/i.test(d.label))
+      if (!monitor) throw new Error('no monitor source')
+      return navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: { exact: monitor.deviceId }, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      })
+    }
+
     async function startAudioCapture() {
       try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-        stream.getVideoTracks().forEach((t) => t.stop())
+        let stream
+        if (/Linux/.test(navigator.userAgent)) {
+          stream = await linuxMonitorStream()
+        } else {
+          stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+          stream.getVideoTracks().forEach((t) => t.stop())
+        }
         const audioTracks = stream.getAudioTracks()
         if (!audioTracks.length) throw new Error('no audio track')
         const actx = new (window.AudioContext || window.webkitAudioContext)()
