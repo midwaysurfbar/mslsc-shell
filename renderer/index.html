@@ -158,8 +158,6 @@
     <button data-id="auction" title="Auction"><img src="../assets/icons/icon-auction.svg" alt="" /></button>
     <button data-id="raffle" title="Raffle"><img src="../assets/icons/icon-raffle.svg" alt="" /></button>
     <button data-id="preorder" title="Meal Pre-Order"><img src="../assets/icons/icon-preorder.svg" alt="" /></button>
-    <div class="sep"></div>
-    <button data-id="jukebox" title="Video Jukebox (opens as its own app)"><img src="../assets/icons/icon-jukebox.png" alt="" /></button>
   </nav>
 
   <div class="loading" id="loading">
@@ -183,8 +181,7 @@
          file. Clicking a card's link inside it opens that system in a
          proper view in this window (see the will-navigate handler
          below) instead of navigating this little embedded page away.
-         Video Jukebox has no web page (desktop-only app) so it isn't on
-         the Hub and keeps its own rail icon as the only way to launch it.
+         (The Video Jukebox launcher was removed 2026-11-06 - the Jukebox is retired.)
 
          allowpopups is required - every Hub card link uses
          target="_blank", and without this attribute a <webview> blocks
@@ -219,7 +216,7 @@
 
     // Ids that open as their own external app rather than a view in this
     // window - don't move the rail highlight or hide the home screen.
-    const EXTERNAL_IDS = new Set(['jukebox'])
+    const EXTERNAL_IDS = new Set()
 
     function setActive(id) {
       if (EXTERNAL_IDS.has(id)) {

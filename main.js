@@ -67,55 +67,6 @@ const SYSTEMS = {
   'preorder-admin': { label: 'Admin', url: 'https://midwaysurfpreorder.vercel.app/admin' },
 }
 
-// The Video Jukebox is its own installed desktop app (local video
-// library + a fullscreen deck for the TV), not a website - so its rail
-// button launches that app rather than loading a URL in-window.
-const EXTERNAL_APPS = {
-  jukebox: { label: 'Video Jukebox' },
-}
-
-function launchJukebox() {
-  const candidates = []
-  if (process.platform === 'win32') {
-    const lad = process.env.LOCALAPPDATA || ''
-    const pf = process.env.ProgramFiles || 'C:\\Program Files'
-    const pfx = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'
-    const pd = process.env.ProgramData || 'C:\\ProgramData'
-    const ad = process.env.APPDATA || ''
-    candidates.push(
-      path.join(lad, 'Programs', 'MSLSC Jukebox', 'MSLSC Jukebox.exe'),
-      path.join(pf, 'MSLSC Jukebox', 'MSLSC Jukebox.exe'),
-      path.join(pfx, 'MSLSC Jukebox', 'MSLSC Jukebox.exe'),
-      path.join(pd, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'MSLSC Jukebox.lnk'),
-      path.join(ad, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'MSLSC Jukebox.lnk'),
-    )
-  } else {
-    const home = app.getPath('home')
-    candidates.push(
-      path.join(home, 'Applications', 'MSLSC Jukebox.AppImage'),
-      path.join(home, 'Applications', 'MSLSC-Jukebox.AppImage'),
-      path.join(home, 'Downloads', 'MSLSC Jukebox.AppImage'),
-    )
-  }
-
-  const found = candidates.find((p) => {
-    try { return fs.existsSync(p) } catch { return false }
-  })
-
-  if (found) {
-    shell.openPath(found).then((err) => {
-      if (err) dialog.showErrorBox('Video Jukebox', `Couldn't launch the Jukebox app:\n${err}`)
-    })
-  } else {
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Video Jukebox',
-      message: "The Video Jukebox app isn't installed on this PC yet.",
-      detail: 'Install it from the mslsc-jukebox GitHub releases and this button will launch it.',
-    })
-  }
-}
-
 let mainWindow = null
 let homeView = null
 let tray = null
@@ -319,7 +270,6 @@ function createWindow() {
   })
 
   ipcMain.on('select-system', (_event, id) => {
-    if (EXTERNAL_APPS[id]) { if (id === 'jukebox') launchJukebox(); return }
     if (id === 'home') showHome()
     else showSystem(id)
   })
